@@ -1,0 +1,6 @@
+yt-dlp[default]
+customtkinter
+pillow
+imageio-ffmpeg
+pyinstaller
+pystray

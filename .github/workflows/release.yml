@@ -1,0 +1,73 @@
+name: Gerar instalador
+
+# Roda quando uma versão é publicada (ex.: tag v1.1.0) ou manualmente pela aba Actions.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Definir versão
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") } else { $v = "0.0.0-dev" }
+          "VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          (Get-Content app.py -Raw -Encoding UTF8) -replace 'APP_VERSION = "[^"]*"', "APP_VERSION = `"$v`"" |
+            Set-Content app.py -Encoding UTF8 -NoNewline
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Gerar ícones e imagens
+        run: python arte.py
+
+      - name: Gerar o programa (PyInstaller)
+        run: >
+          python -m PyInstaller --noconfirm --clean --noconsole --onedir
+          --name BaixadorDeVideos
+          --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all customtkinter
+          --collect-all imageio_ffmpeg --collect-all pystray
+          --icon icone.ico app.py
+
+      - name: Incluir o Deno (exigido pelo YouTube)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile deno.zip
+          Expand-Archive deno.zip -DestinationPath deno -Force
+          Copy-Item deno\deno.exe dist\BaixadorDeVideos\
+
+      - name: Instalar o Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Montar o instalador
+        shell: pwsh
+        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$env:VERSION" installer.iss'
+
+      - name: Guardar o instalador (artefato)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BaixadorDeVideos_Setup
+          path: installer_output/BaixadorDeVideos_Setup.exe
+
+      - name: Publicar na página de Releases
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer_output/BaixadorDeVideos_Setup.exe
+          generate_release_notes: true

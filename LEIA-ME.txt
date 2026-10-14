@@ -1,0 +1,87 @@
+BAIXADOR DE VIDEOS - Windows
+Produzido por Lagaz
+
+==============================================================
+ A) CRIAR O INSTALADOR (faca isso uma vez, no seu computador)
+==============================================================
+1) Instale o Python em python.org (marque "Add Python to PATH").
+2) De dois cliques em  gerar_instalador.bat
+   Ele faz tudo sozinho (leva alguns minutos, precisa de internet):
+   - instala as bibliotecas e gera o programa;
+   - inclui o Deno (exigido pelo YouTube) e o FFmpeg dentro do instalador;
+   - instala o Inno Setup pelo winget, se ainda nao tiver, e monta o instalador.
+3) Quando terminar, abre a pasta  installer_output  com o arquivo:
+
+      BaixadorDeVideos_Setup.exe
+
+==============================================================
+ B) INSTALAR EM QUALQUER COMPUTADOR
+==============================================================
+Copie so o  BaixadorDeVideos_Setup.exe  (pendrive, nuvem, etc.) para o outro
+computador e de dois cliques. NAO precisa ter Python nem instalar mais nada.
+
+- Instala so para o usuario atual: nao pede senha de administrador.
+- Cria atalho no Menu Iniciar e (opcional) na Area de Trabalho.
+- Para desinstalar: Configuracoes > Aplicativos > Baixador de Videos.
+  Na desinstalacao ele pergunta se quer apagar historico e configuracoes
+  (os videos baixados nunca sao apagados).
+
+Aviso do Windows: como o instalador nao tem assinatura digital paga, o
+SmartScreen pode mostrar "O Windows protegeu seu computador". Clique em
+"Mais informacoes" e depois em "Executar assim mesmo". Alguns antivirus
+tambem podem reclamar de programas feitos com PyInstaller (falso alarme).
+
+==============================================================
+ C) OUTRAS FORMAS DE USAR
+==============================================================
+- executar.bat      : abre o programa direto pelo Python (sem instalar).
+- gerar_exe.bat     : gera um unico .exe portatil (sem instalador).
+
+==============================================================
+ D) LANCAR UMA NOVA VERSAO
+==============================================================
+Troque o numero da versao nos dois lugares e rode o gerar_instalador.bat:
+   - app.py         ->  APP_VERSION = "1.1.0"
+   - installer.iss  ->  #define MyAppVersion "1.1.0"
+Quem rodar o novo Setup.exe por cima atualiza o programa (o historico e as
+configuracoes sao mantidos).
+
+==============================================================
+ E) SUGESTAO DE DOWNLOAD ENQUANTO VOCE ASSISTE (extensao)
+==============================================================
+Com a extensao instalada no navegador, quando um video comeca a tocar o
+programa mostra um aviso no canto da tela: "Video detectado" com o botao Baixar.
+
+Instalar a extensao (1 minuto, uma vez so):
+1) No programa: aba da engrenagem > "Sugestoes de download no navegador" >
+   "Instalar a extensao". Ele mostra os passos e abre a pasta certa.
+2) No Edge abra edge://extensions (no Chrome: chrome://extensions),
+   ative o "Modo de desenvolvedor" e clique em "Carregar sem pacote".
+3) Escolha a pasta  extensao_navegador  (fica na pasta onde o programa foi
+   instalado, ou ao lado do app.py).
+4) Fixe o icone da extensao na barra: ele mostra se esta conectado.
+
+Como funciona:
+- O programa precisa estar aberto (pode ficar na bandeja do sistema).
+- So sugere em paginas de UM video (ex.: youtube.com/watch), nunca na home.
+- So avisa se o yt-dlp consegue baixar aquele video (servicos com DRM como
+  Netflix sao ignorados).
+- No aviso: "Baixar" (melhor qualidade), "Qualidade..." (abre o programa) e
+  "Ignorar site" (para de sugerir naquele site; da para limpar a lista na
+  aba da engrenagem).
+- Botao da extensao "Baixar a pagina atual": envia a pagina na hora.
+- Privacidade: a extensao so conversa com o programa neste computador
+  (127.0.0.1). Nada e enviado para a internet nem para outras pessoas.
+
+Observacoes:
+- O Chrome pode avisar sobre "extensoes do modo de desenvolvedor" ao abrir.
+- Firefox ainda nao tem versao da extensao.
+
+==============================================================
+ F) SE UM SITE PARAR DE FUNCIONAR
+==============================================================
+O YouTube muda com frequencia. Gere o instalador de novo (ele baixa o yt-dlp
+mais recente) e reinstale.
+
+Use apenas para conteudo que voce tem direito de baixar e respeite os
+termos de uso dos sites.
