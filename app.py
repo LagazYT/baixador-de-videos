@@ -139,7 +139,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.1.0"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.2.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(

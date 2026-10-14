@@ -41,8 +41,8 @@ tambem podem reclamar de programas feitos com PyInstaller (falso alarme).
  D) LANCAR UMA NOVA VERSAO
 ==============================================================
 Troque o numero da versao nos dois lugares e rode o gerar_instalador.bat:
-   - app.py         ->  APP_VERSION = "1.1.0"
-   - installer.iss  ->  #define MyAppVersion "1.1.0"
+   - app.py         ->  APP_VERSION = "1.2.0"
+   - installer.iss  ->  #define MyAppVersion "1.2.0"
 Quem rodar o novo Setup.exe por cima atualiza o programa (o historico e as
 configuracoes sao mantidos).
 
