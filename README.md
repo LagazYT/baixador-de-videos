@@ -32,6 +32,7 @@ Requisitos: Windows 10 ou 11 (64 bits).
 - **Sugestão enquanto você assiste:** com a extensão do navegador, o programa avisa quando um vídeo está tocando e oferece o download.
 - **Vídeos com restrição de idade:** usa o login do navegador ou um arquivo `cookies.txt`.
 - **Tema claro, escuro ou do sistema**, e opção de minimizar para a bandeja do sistema.
+- **Dois estilos visuais:** Clássico (padrão) ou Cyberpunk, em amarelo, vermelho e cinza. Troque na aba ⚙.
 - **Tudo pronto:** FFmpeg e Deno já vêm no instalador.
 
 <p align="center">

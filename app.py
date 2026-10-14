@@ -37,43 +37,104 @@ except Exception:  # noqa: BLE001
 
 # ---------- Tema ----------
 ctk.set_default_color_theme("blue")
-try:
-    _th = ctk.ThemeManager.theme
-    _th["CTkFont"]["family"] = FONT
-    _th["CTkButton"]["text_color"] = [ON_ACCENT, ON_ACCENT]
-    _th["CTkButton"]["fg_color"] = [ACCENT, ACCENT]
-    _th["CTkButton"]["hover_color"] = [ACCENT_HOVER, ACCENT_HOVER]
-    _th["CTkCheckBox"]["fg_color"] = [ACCENT, ACCENT]
-    _th["CTkSwitch"]["progress_color"] = [ACCENT, ACCENT]
-    _th["CTkEntry"]["border_color"] = list(LINE)
-except Exception:  # noqa: BLE001
-    pass
 
-# Estilo cyberpunk: amarelo, vermelho e cinza. Cores em pares (tema claro, tema escuro)
-BG = ("#e7e8eb", "#101013")
-CARD = ("#f5f5f7", "#1a1b1f")
-CARD_2 = ("#dcdde1", "#26272d")
-CARD_2_HOVER = ("#cdced4", "#32343b")
-LINE = ("#b9bbc2", "#34363d")
-ACCENT = "#f7d61e"
-ACCENT_HOVER = "#e2c210"
-ON_ACCENT = "#0c0c0e"
-DANGER = "#e8263a"
-DANGER_HOVER = "#c41d30"
-MUTED = ("#5d6068", "#8d9099")
-SUCCESS = ("#0f8a5f", "#2fd38a")
-TEXT = ("#121215", "#ececef")
-TEXT_SOFT = ("#2c2e34", "#c9cbd1")
-WARN = ("#8a5f00", "#f7d61e")
-ERROR = ("#c41d30", "#ff4d5e")
-BANNER_BG = ("#f3e49a", "#2a2408")
-BANNER_TEXT = ("#4d3e00", "#f7d61e")
-REMOVE_HOVER = ("#f6c9ce", "#3a1218")
-SEG_UNSEL = ("#b9bbc2", "#7a7d86")
-SEG_UNSEL_HOVER = ("#a8aab2", "#8d9099")
-SEG_TEXT = (ON_ACCENT, ON_ACCENT)
-RADIUS = 2
-FONT = "Bahnschrift"  # fonte técnica que já vem no Windows 10/11
+# Estilos visuais (cores em pares: tema claro, tema escuro).
+# "classico" é o visual principal; "cyberpunk" é opcional (aba ⚙).
+STYLES = {
+    "classico": dict(
+        BG=("#f3f4f9", "#0f1115"),
+        CARD=("#ffffff", "#181b22"),
+        CARD_2=("#e9ebf3", "#232833"),
+        CARD_2_HOVER=("#dcdfec", "#2d3340"),
+        LINE=("#e9ebf3", "#232833"),
+        ACCENT="#7c3aed",
+        ACCENT_HOVER="#6d28d9",
+        ON_ACCENT="#ffffff",
+        DANGER="#dc2626",
+        DANGER_HOVER="#b91c1c",
+        MUTED=("#6b7280", "#9ca3af"),
+        SUCCESS=("#15803d", "#22c55e"),
+        TEXT=("#1f2937", "#e5e7eb"),
+        TEXT_SOFT=("#374151", "#d1d5db"),
+        WARN=("#b45309", "#f59e0b"),
+        ERROR=("#dc2626", "#f87171"),
+        BANNER_BG=("#fef3c7", "#3b2a0a"),
+        BANNER_TEXT=("#92400e", "#fbbf24"),
+        REMOVE_HOVER=("#fee2e2", "#3b1010"),
+        SEG_UNSEL=("#7c819a", "#2d3340"),
+        SEG_UNSEL_HOVER=("#666b85", "#3a4050"),
+        SEG_TEXT=("#ffffff", "#e5e7eb"),
+        ACCENT_TEXT=("#6d28d9", "#a78bfa"),
+        FOOTER_TEXT=("#5b5f80", "#a5a8c0"),
+        ENTRY_BORDER=0,
+        CARD_BORDER=0,
+        HUD=False,
+        SHARP=False,
+        FONT=None,
+    ),
+    "cyberpunk": dict(
+        BG=("#e7e8eb", "#101013"),
+        CARD=("#f5f5f7", "#1a1b1f"),
+        CARD_2=("#dcdde1", "#26272d"),
+        CARD_2_HOVER=("#cdced4", "#32343b"),
+        LINE=("#b9bbc2", "#34363d"),
+        ACCENT="#f7d61e",
+        ACCENT_HOVER="#e2c210",
+        ON_ACCENT="#0c0c0e",
+        DANGER="#e8263a",
+        DANGER_HOVER="#c41d30",
+        MUTED=("#5d6068", "#8d9099"),
+        SUCCESS=("#0f8a5f", "#2fd38a"),
+        TEXT=("#121215", "#ececef"),
+        TEXT_SOFT=("#2c2e34", "#c9cbd1"),
+        WARN=("#8a5f00", "#f7d61e"),
+        ERROR=("#c41d30", "#ff4d5e"),
+        BANNER_BG=("#f3e49a", "#2a2408"),
+        BANNER_TEXT=("#4d3e00", "#f7d61e"),
+        REMOVE_HOVER=("#f6c9ce", "#3a1218"),
+        SEG_UNSEL=("#b9bbc2", "#7a7d86"),
+        SEG_UNSEL_HOVER=("#a8aab2", "#8d9099"),
+        SEG_TEXT=("#0c0c0e", "#0c0c0e"),
+        ACCENT_TEXT=("#7a6200", "#f7d61e"),
+        FOOTER_TEXT=("#2c2e34", "#c9cbd1"),
+        ENTRY_BORDER=1,
+        CARD_BORDER=1,
+        HUD=True,
+        SHARP=True,
+        FONT="Bahnschrift",  # fonte técnica que já vem no Windows 10/11
+    ),
+}
+STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk"}
+DEFAULT_STYLE = "classico"
+UI_STYLE = DEFAULT_STYLE
+
+
+def apply_style(name):
+    """Define as cores/formas globais do estilo escolhido. Chamar antes de criar a janela."""
+    global UI_STYLE
+    UI_STYLE = name if name in STYLES else DEFAULT_STYLE
+    globals().update(STYLES[UI_STYLE])
+    arte.set_style(UI_STYLE)
+    try:
+        th = ctk.ThemeManager.theme
+        if FONT:
+            th["CTkFont"]["family"] = FONT
+        th["CTkButton"]["text_color"] = [ON_ACCENT, ON_ACCENT]
+        th["CTkButton"]["fg_color"] = [ACCENT, ACCENT]
+        th["CTkButton"]["hover_color"] = [ACCENT_HOVER, ACCENT_HOVER]
+        th["CTkCheckBox"]["fg_color"] = [ACCENT, ACCENT]
+        th["CTkSwitch"]["progress_color"] = [ACCENT, ACCENT]
+        th["CTkEntry"]["border_color"] = list(LINE)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def R(n):
+    """Raio dos cantos: o do clássico, ou quase reto no cyberpunk."""
+    return 2 if SHARP else n
+
+
+apply_style(DEFAULT_STYLE)
 
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
@@ -119,7 +180,6 @@ LOG_PATH = os.path.join(os.path.dirname(TOOLS_DIR), "erros.log")
 # Qualidade do botão "Baixar" do aviso do navegador (padrão: até 1080p, MP4 compatível)
 QUICK_CHOICES = {"Até 1080p (recomendado)": "1080p", "Até 720p": "720p",
                  "Até 480p": "480p", "Melhor disponível": "best"}
-ACCENT_TEXT = ("#7a6200", "#f7d61e")
 HISTORY_PAGE = 30
 SMALL_W, SMALL_H = 128, 72
 
@@ -679,14 +739,14 @@ class HelpDialog(ctk.CTkToplevel):
             ).pack(anchor="w", padx=24, pady=(10, 0))
         for text, cmd, primary, close in buttons:
             ctk.CTkButton(
-                self, text=text, height=40, corner_radius=RADIUS,
+                self, text=text, height=40, corner_radius=R(10),
                 fg_color=ACCENT if primary else CARD_2,
                 hover_color=ACCENT_HOVER if primary else CARD_2_HOVER,
                 text_color=ON_ACCENT if primary else TEXT,
                 command=lambda c=cmd, cl=close: self._run(c, cl),
             ).pack(fill="x", padx=24, pady=(8, 0))
         ctk.CTkButton(
-            self, text="Fechar", height=36, corner_radius=RADIUS, fg_color="transparent",
+            self, text="Fechar", height=36, corner_radius=R(10), fg_color="transparent",
             hover_color=CARD_2, text_color=MUTED, command=self.destroy,
         ).pack(pady=(10, 16))
 
@@ -737,7 +797,7 @@ class SuggestionToast(ctk.CTkToplevel):
         except Exception:  # noqa: BLE001
             pass
 
-        card = ctk.CTkFrame(self, fg_color=CARD, corner_radius=RADIUS, border_width=2,
+        card = ctk.CTkFrame(self, fg_color=CARD, corner_radius=R(16), border_width=2,
                             border_color=ACCENT, bg_color=self.KEY)
         card.pack(fill="both", expand=True)
 
@@ -748,7 +808,7 @@ class SuggestionToast(ctk.CTkToplevel):
             font=ctk.CTkFont(size=12, weight="bold"),
         ).pack(side="left")
         ctk.CTkButton(
-            head, text="✕", width=26, height=26, corner_radius=RADIUS, fg_color="transparent",
+            head, text="✕", width=26, height=26, corner_radius=R(8), fg_color="transparent",
             hover_color=CARD_2, text_color=MUTED, command=self.close,
         ).pack(side="right")
 
@@ -786,16 +846,16 @@ class SuggestionToast(ctk.CTkToplevel):
         btns.pack(fill="x", padx=14, pady=(10, 12))
         ctk.CTkButton(
             btns, text="↻ Baixar de novo" if already else "⬇ Baixar", width=120,
-            height=34, corner_radius=RADIUS, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            height=34, corner_radius=R(10), fg_color=ACCENT, hover_color=ACCENT_HOVER,
             font=ctk.CTkFont(weight="bold"), command=lambda: self._act(on_download),
         ).pack(side="left")
         ctk.CTkButton(
-            btns, text="Qualidade...", width=96, height=34, corner_radius=RADIUS,
+            btns, text="Qualidade...", width=96, height=34, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
             command=lambda: self._act(on_choose),
         ).pack(side="left", padx=(8, 0))
         ctk.CTkButton(
-            btns, text="Ignorar site", width=84, height=34, corner_radius=RADIUS,
+            btns, text="Ignorar site", width=84, height=34, corner_radius=R(10),
             fg_color="transparent", hover_color=CARD_2, text_color=MUTED,
             font=ctk.CTkFont(size=12), command=lambda: self._act(on_ignore),
         ).pack(side="right")
@@ -952,12 +1012,13 @@ class App(ctk.CTk):
 
     # ---------- Interface ----------
     def _card(self, parent):
-        card = ctk.CTkFrame(parent, fg_color=CARD, corner_radius=RADIUS, bg_color=BG,
-                            border_width=1, border_color=LINE)
-        tick = ctk.CTkFrame(card, width=46, height=3, fg_color=ACCENT, corner_radius=0)
-        tick.place(x=0, y=0)
-        dot = ctk.CTkFrame(card, width=10, height=3, fg_color=DANGER, corner_radius=0)
-        dot.place(x=50, y=0)
+        card = ctk.CTkFrame(parent, fg_color=CARD, corner_radius=R(16), bg_color=BG,
+                            border_width=CARD_BORDER, border_color=LINE)
+        if HUD:  # marcadores amarelo/vermelho no canto (estilo cyberpunk)
+            tick = ctk.CTkFrame(card, width=46, height=3, fg_color=ACCENT, corner_radius=0)
+            tick.place(x=0, y=0)
+            dot = ctk.CTkFrame(card, width=10, height=3, fg_color=DANGER, corner_radius=0)
+            dot.place(x=50, y=0)
         return card
 
     def _build_ui(self):
@@ -970,12 +1031,12 @@ class App(ctk.CTk):
         # Rodapé com marca d'água (reservado antes das abas)
         ctk.CTkLabel(
             root, text="Produzido por Lagaz", image=self._footer_img,
-            compound="center", text_color=("#2c2e34", "#c9cbd1"),
+            compound="center", text_color=FOOTER_TEXT,
             font=ctk.CTkFont(size=12, weight="bold"),
         ).pack(side="bottom", pady=(8, 0))
 
         # Aviso de instalação de componentes (Deno / FFmpeg)
-        self.setup_banner = ctk.CTkFrame(root, fg_color=BANNER_BG, corner_radius=RADIUS)
+        self.setup_banner = ctk.CTkFrame(root, fg_color=BANNER_BG, corner_radius=R(12))
         self.setup_label = ctk.CTkLabel(
             self.setup_banner, text="", text_color=BANNER_TEXT, wraplength=560,
             justify="left", anchor="w",
@@ -983,13 +1044,13 @@ class App(ctk.CTk):
         self.setup_label.pack(side="left", fill="x", expand=True, padx=14, pady=10)
         self.setup_btn = ctk.CTkButton(
             self.setup_banner, text="Tentar novamente", width=140, height=32,
-            corner_radius=RADIUS, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            corner_radius=R(8), fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=self._maybe_setup,
         )
 
         # Abas
         self.tabs = ctk.CTkTabview(
-            root, fg_color=BG, corner_radius=RADIUS,
+            root, fg_color=BG, corner_radius=R(16),
             segmented_button_fg_color=CARD,
             segmented_button_selected_color=ACCENT,
             segmented_button_selected_hover_color=ACCENT_HOVER,
@@ -1020,18 +1081,18 @@ class App(ctk.CTk):
         row = ctk.CTkFrame(url_card, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=16)
         self.url_entry = ctk.CTkEntry(
-            row, textvariable=self.url_var, height=44, corner_radius=RADIUS,
-            border_width=1, border_color=LINE, fg_color=CARD_2,
+            row, textvariable=self.url_var, height=44, corner_radius=R(12),
+            border_width=ENTRY_BORDER, border_color=LINE, fg_color=CARD_2,
             placeholder_text="Cole o link do vídeo aqui...",
         )
         self.url_entry.pack(side="left", fill="x", expand=True)
         self.url_entry.bind("<Return>", lambda e: self.analyze())
         ctk.CTkButton(
-            row, text="Colar", width=80, height=44, corner_radius=RADIUS,
+            row, text="Colar", width=80, height=44, corner_radius=R(12),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT, command=self.paste,
         ).pack(side="left", padx=(8, 0))
         self.btn_analyze = ctk.CTkButton(
-            row, text="Analisar", width=110, height=44, corner_radius=RADIUS,
+            row, text="Analisar", width=110, height=44, corner_radius=R(12),
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
             font=ctk.CTkFont(weight="bold"), command=self.analyze,
         )
@@ -1045,7 +1106,7 @@ class App(ctk.CTk):
 
         self.thumb_label = ctk.CTkLabel(
             inner, text="", image=self._placeholder,
-            compound="center", text_color=MUTED, corner_radius=RADIUS,
+            compound="center", text_color=MUTED, corner_radius=R(12),
             width=THUMB_W, height=THUMB_H,
         )
         self.thumb_label.pack(side="left")
@@ -1069,7 +1130,7 @@ class App(ctk.CTk):
         )
         self.quality_menu = ctk.CTkOptionMenu(
             side, variable=self.quality_var, values=["—"], height=40,
-            corner_radius=RADIUS, fg_color=CARD_2, button_color=ACCENT,
+            corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
             button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2, dropdown_text_color=TEXT, text_color=TEXT,
             state="disabled",
         )
@@ -1082,11 +1143,11 @@ class App(ctk.CTk):
         frow.pack(fill="x", padx=16, pady=14)
         ctk.CTkLabel(frow, text="📁", font=ctk.CTkFont(size=18)).pack(side="left")
         ctk.CTkEntry(
-            frow, textvariable=self.folder_var, height=38, corner_radius=RADIUS,
-            border_width=1, border_color=LINE, fg_color=CARD_2,
+            frow, textvariable=self.folder_var, height=38, corner_radius=R(10),
+            border_width=ENTRY_BORDER, border_color=LINE, fg_color=CARD_2,
         ).pack(side="left", fill="x", expand=True, padx=(8, 8))
         ctk.CTkButton(
-            frow, text="Escolher pasta", width=120, height=38, corner_radius=RADIUS,
+            frow, text="Escolher pasta", width=120, height=38, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT, command=self.choose_folder,
         ).pack(side="left")
 
@@ -1103,7 +1164,7 @@ class App(ctk.CTk):
         self.cookie_var = ctk.StringVar(value=self._initial_cookie_choice)
         ctk.CTkOptionMenu(
             lrow, variable=self.cookie_var, values=COOKIE_CHOICES, height=34,
-            corner_radius=RADIUS, fg_color=CARD_2, button_color=ACCENT,
+            corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
             button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2, dropdown_text_color=TEXT, text_color=TEXT,
             command=self._on_cookie_choice,
         ).pack(side="left", fill="x", expand=True)
@@ -1119,20 +1180,20 @@ class App(ctk.CTk):
         actions = ctk.CTkFrame(page, fg_color="transparent", bg_color=BG)
         actions.pack(fill="x", pady=(0, 12))
         self.btn_download = ctk.CTkButton(
-            actions, text="Baixar", height=48, corner_radius=RADIUS,
+            actions, text="Baixar", height=48, corner_radius=R(12),
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
             font=ctk.CTkFont(size=15, weight="bold"),
             command=self.start_download, state="disabled",
         )
         self.btn_download.pack(side="left", fill="x", expand=True)
         self.btn_cancel = ctk.CTkButton(
-            actions, text="Cancelar", width=110, height=48, corner_radius=RADIUS,
+            actions, text="Cancelar", width=110, height=48, corner_radius=R(12),
             fg_color=DANGER, hover_color=DANGER_HOVER, command=self.cancel,
             state="disabled",
         )
         self.btn_cancel.pack(side="left", padx=(8, 0))
         ctk.CTkButton(
-            actions, text="Abrir pasta", width=120, height=48, corner_radius=RADIUS,
+            actions, text="Abrir pasta", width=120, height=48, corner_radius=R(12),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT, command=self.open_folder,
         ).pack(side="left", padx=(8, 0))
 
@@ -1140,7 +1201,7 @@ class App(ctk.CTk):
         prog_card = self._card(page)
         prog_card.pack(fill="x")
         self.progress = ctk.CTkProgressBar(
-            prog_card, height=12, corner_radius=RADIUS, progress_color=ACCENT,
+            prog_card, height=12, corner_radius=R(6), progress_color=ACCENT,
             fg_color=CARD_2,
         )
         self.progress.pack(fill="x", padx=16, pady=(16, 8))
@@ -1239,8 +1300,8 @@ class App(ctk.CTk):
 
         self.search_var = ctk.StringVar()
         self.search_entry = ctk.CTkEntry(
-            row, textvariable=self.search_var, height=44, corner_radius=RADIUS,
-            border_width=1, border_color=LINE, fg_color=CARD_2, placeholder_text="Pesquisar vídeos...",
+            row, textvariable=self.search_var, height=44, corner_radius=R(12),
+            border_width=ENTRY_BORDER, border_color=LINE, fg_color=CARD_2, placeholder_text="Pesquisar vídeos...",
         )
         self.search_entry.pack(side="left", fill="x", expand=True)
         self.search_entry.bind("<Return>", lambda e: self.search())
@@ -1248,11 +1309,11 @@ class App(ctk.CTk):
         self.source_var = ctk.StringVar(value=list(SEARCH_SOURCES)[0])
         ctk.CTkOptionMenu(
             row, variable=self.source_var, values=list(SEARCH_SOURCES), width=160,
-            height=44, corner_radius=RADIUS, fg_color=CARD_2, button_color=ACCENT,
+            height=44, corner_radius=R(12), fg_color=CARD_2, button_color=ACCENT,
             button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2, dropdown_text_color=TEXT, text_color=TEXT,
         ).pack(side="left", padx=(8, 0))
         self.btn_search = ctk.CTkButton(
-            row, text="Buscar", width=100, height=44, corner_radius=RADIUS,
+            row, text="Buscar", width=100, height=44, corner_radius=R(12),
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
             font=ctk.CTkFont(weight="bold"), command=self.search,
         )
@@ -1266,7 +1327,7 @@ class App(ctk.CTk):
                   "aba Baixar."),
         ).pack(side="left")
         ctk.CTkButton(
-            row2, text="🌐 Pesquisar na web", width=160, height=34, corner_radius=RADIUS,
+            row2, text="🌐 Pesquisar na web", width=160, height=34, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT, command=self.search_web,
         ).pack(side="right")
 
@@ -1364,7 +1425,7 @@ class App(ctk.CTk):
             return
         self._clear_results()
         for i, r in enumerate(results):
-            card = ctk.CTkFrame(self.results_frame, fg_color=CARD, corner_radius=RADIUS, bg_color=BG)
+            card = ctk.CTkFrame(self.results_frame, fg_color=CARD, corner_radius=R(14), bg_color=BG)
             card.pack(fill="x", pady=5, padx=2)
             self._result_widgets.append(card)
 
@@ -1378,12 +1439,12 @@ class App(ctk.CTk):
             btns = ctk.CTkFrame(card, fg_color="transparent")
             btns.pack(side="right", padx=12)
             ctk.CTkButton(
-                btns, text="⬇ Baixar", width=110, height=34, corner_radius=RADIUS,
+                btns, text="⬇ Baixar", width=110, height=34, corner_radius=R(10),
                 fg_color=ACCENT, hover_color=ACCENT_HOVER,
                 command=lambda u=r["url"]: self.use_result(u, True),
             ).pack(pady=(0, 6))
             ctk.CTkButton(
-                btns, text="Qualidade...", width=110, height=34, corner_radius=RADIUS,
+                btns, text="Qualidade...", width=110, height=34, corner_radius=R(10),
                 fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
                 command=lambda u=r["url"]: self.use_result(u, False),
             ).pack()
@@ -1445,13 +1506,35 @@ class App(ctk.CTk):
         ).pack(anchor="w", padx=16, pady=(0, 10))
         self.theme_seg = ctk.CTkSegmentedButton(
             card, values=list(THEME_LABELS), command=self._on_theme_change,
-            height=38, corner_radius=RADIUS, fg_color=CARD_2, selected_color=ACCENT,
+            height=38, corner_radius=R(10), fg_color=CARD_2, selected_color=ACCENT,
             selected_hover_color=ACCENT_HOVER, unselected_color=SEG_UNSEL,
             unselected_hover_color=SEG_UNSEL_HOVER, text_color=SEG_TEXT,
         )
         label = next(k for k, v in THEME_LABELS.items() if v == self.appearance)
         self.theme_seg.set(label)
         self.theme_seg.pack(fill="x", padx=16, pady=(0, 16))
+
+        # Estilo visual (layout e aparência)
+        card_st = self._card(page)
+        card_st.pack(fill="x", pady=(0, 12))
+        ctk.CTkLabel(
+            card_st, text="Estilo visual", font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", padx=16, pady=(16, 2))
+        ctk.CTkLabel(
+            card_st, text_color=MUTED, anchor="w", justify="left", wraplength=620,
+            font=ctk.CTkFont(size=12),
+            text=("Muda as cores, as formas e as imagens do aplicativo. Clássico é o "
+                  "visual principal; Cyberpunk usa amarelo, vermelho e cinza com cantos "
+                  "retos. O programa reinicia para aplicar."),
+        ).pack(anchor="w", padx=16, pady=(0, 10))
+        self.style_seg = ctk.CTkSegmentedButton(
+            card_st, values=list(STYLE_LABELS), command=self._on_style_change,
+            height=38, corner_radius=R(10), fg_color=CARD_2, selected_color=ACCENT,
+            selected_hover_color=ACCENT_HOVER, unselected_color=SEG_UNSEL,
+            unselected_hover_color=SEG_UNSEL_HOVER, text_color=SEG_TEXT,
+        )
+        self.style_seg.set(next(k for k, v in STYLE_LABELS.items() if v == UI_STYLE))
+        self.style_seg.pack(fill="x", padx=16, pady=(0, 16))
 
         # Bandeja do sistema
         card2 = self._card(page)
@@ -1510,7 +1593,7 @@ class App(ctk.CTk):
         self.quick_var = ctk.StringVar(value=cur)
         ctk.CTkOptionMenu(
             qrow, variable=self.quick_var, values=list(QUICK_CHOICES), width=190,
-            height=34, corner_radius=RADIUS, fg_color=CARD_2, button_color=ACCENT,
+            height=34, corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
             button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2,
             dropdown_text_color=TEXT, text_color=TEXT, command=self._on_quick_quality,
         ).pack(side="left", padx=(10, 0))
@@ -1522,11 +1605,11 @@ class App(ctk.CTk):
         brow = ctk.CTkFrame(card4, fg_color="transparent")
         brow.pack(fill="x", padx=16, pady=(10, 16))
         ctk.CTkButton(
-            brow, text="Instalar a extensão", width=170, height=36, corner_radius=RADIUS,
+            brow, text="Instalar a extensão", width=170, height=36, corner_radius=R(10),
             fg_color=ACCENT, hover_color=ACCENT_HOVER, command=self.show_extension_help,
         ).pack(side="left")
         ctk.CTkButton(
-            brow, text="Limpar sites ignorados", width=170, height=36, corner_radius=RADIUS,
+            brow, text="Limpar sites ignorados", width=170, height=36, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
             command=self.clear_ignored,
         ).pack(side="left", padx=(8, 0))
@@ -1545,6 +1628,48 @@ class App(ctk.CTk):
             card3, text=f"Produzido por Lagaz  •  v{APP_VERSION}  •  {ver}", text_color=MUTED,
             font=ctk.CTkFont(size=12),
         ).pack(anchor="w", padx=16, pady=(0, 14))
+
+    def _on_style_change(self, label):
+        key = STYLE_LABELS.get(label, DEFAULT_STYLE)
+        if key == UI_STYLE:
+            return
+        current = next(k for k, v in STYLE_LABELS.items() if v == UI_STYLE)
+        if self.busy:
+            messagebox.showinfo(
+                "Aguarde",
+                "Espere o download atual terminar para trocar o estilo visual.",
+            )
+            self.style_seg.set(current)
+            return
+        if not messagebox.askyesno(
+            "Trocar estilo visual",
+            f"Mudar para o estilo {label}?\n\nO programa vai reiniciar para aplicar "
+            "(leva só alguns segundos).",
+        ):
+            self.style_seg.set(current)
+            return
+        update_settings(ui_style=key)
+        self._restart()
+
+    def _restart(self):
+        """Fecha e abre o programa de novo (para aplicar o estilo visual)."""
+        if getattr(sys, "frozen", False):
+            cmd = [sys.executable] + sys.argv[1:]
+        else:
+            cmd = [sys.executable, os.path.abspath(sys.argv[0])] + sys.argv[1:]
+        self.cancel_flag.set()
+        self._stop_tray()
+        if self.bridge is not None:
+            self.bridge.stop()
+        try:
+            subprocess.Popen(cmd, cwd=os.getcwd(), close_fds=True)
+        except Exception as e:  # noqa: BLE001
+            messagebox.showerror(
+                "Reiniciar",
+                f"Não consegui reiniciar sozinho. Feche e abra o programa.\n\n{e}",
+            )
+            return
+        self.destroy()
 
     def _on_theme_change(self, label):
         key = THEME_LABELS.get(label, "dark")
@@ -1893,13 +2018,13 @@ class App(ctk.CTk):
         )
         self.hist_count.pack(side="left")
         ctk.CTkButton(
-            row, text="Limpar histórico", width=140, height=34, corner_radius=RADIUS,
+            row, text="Limpar histórico", width=140, height=34, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT, command=self.clear_history,
         ).pack(side="right")
         self.hist_filter_var = ctk.StringVar()
         ctk.CTkEntry(
-            top, textvariable=self.hist_filter_var, height=40, corner_radius=RADIUS,
-            border_width=1, border_color=LINE, fg_color=CARD_2,
+            top, textvariable=self.hist_filter_var, height=40, corner_radius=R(12),
+            border_width=ENTRY_BORDER, border_color=LINE, fg_color=CARD_2,
             placeholder_text="Filtrar por título ou canal...",
         ).pack(fill="x", padx=16, pady=(0, 16))
         self.hist_filter_var.trace_add("write", lambda *a: self._schedule_hist_render())
@@ -1953,7 +2078,7 @@ class App(ctk.CTk):
         if len(items) > self._hist_limit:
             btn = ctk.CTkButton(
                 self.hist_frame, bg_color=BG, text=f"Mostrar mais ({len(items) - self._hist_limit})",
-                height=38, corner_radius=RADIUS, fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
+                height=38, corner_radius=R(10), fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
                 command=self._hist_more,
             )
             btn.pack(pady=10)
@@ -1970,7 +2095,7 @@ class App(ctk.CTk):
         return self._small_placeholder
 
     def _hist_row(self, h):
-        card = ctk.CTkFrame(self.hist_frame, fg_color=CARD, corner_radius=RADIUS, bg_color=BG)
+        card = ctk.CTkFrame(self.hist_frame, fg_color=CARD, corner_radius=R(14), bg_color=BG)
         card.pack(fill="x", pady=5, padx=2)
         self._hist_widgets.append(card)
 
@@ -1981,11 +2106,11 @@ class App(ctk.CTk):
         right = ctk.CTkFrame(card, fg_color="transparent")
         right.pack(side="right", padx=12, pady=10)
         ctk.CTkButton(
-            right, text="↻ Baixar de novo", width=150, height=32, corner_radius=RADIUS,
+            right, text="↻ Baixar de novo", width=150, height=32, corner_radius=R(10),
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=lambda e=h: self.redownload(e),
         ).grid(row=0, column=0, columnspan=2, pady=(0, 6))
-        small = dict(width=72, height=28, corner_radius=RADIUS, fg_color=CARD_2,
+        small = dict(width=72, height=28, corner_radius=R(8), fg_color=CARD_2,
                      hover_color=CARD_2_HOVER, text_color=TEXT, font=ctk.CTkFont(size=12))
         ctk.CTkButton(right, text="Qualidade", command=lambda e=h: self.hist_pick_quality(e),
                       **small).grid(row=1, column=0, padx=(0, 3), pady=(0, 4))
@@ -1994,7 +2119,7 @@ class App(ctk.CTk):
         ctk.CTkButton(right, text="Pasta", command=lambda e=h: self.hist_folder(e),
                       **small).grid(row=2, column=0, padx=(0, 3))
         ctk.CTkButton(
-            right, text="Remover", width=72, height=28, corner_radius=RADIUS,
+            right, text="Remover", width=72, height=28, corner_radius=R(8),
             fg_color="transparent", hover_color=REMOVE_HOVER, text_color=ERROR,
             font=ctk.CTkFont(size=12), command=lambda e=h: self.hist_remove(e),
         ).grid(row=2, column=1, padx=(3, 0))
@@ -2739,4 +2864,5 @@ class App(ctk.CTk):
 
 
 if __name__ == "__main__":
+    apply_style(load_settings().get("ui_style", DEFAULT_STYLE))
     App().mainloop()
