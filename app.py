@@ -211,7 +211,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.5.0"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.6.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(
@@ -623,18 +623,6 @@ def pick_quality(wanted, options):
     return LABEL_BEST
 
 
-def log_error(text):
-    """Guarda detalhes técnicos de falhas em erros.log (ajuda a descobrir a causa)."""
-    try:
-        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-        if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > 200_000:
-            os.remove(LOG_PATH)
-        with open(LOG_PATH, "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.now():%d/%m/%Y %H:%M:%S}] {text}\n")
-    except Exception:  # noqa: BLE001
-        pass
-
-
 def is_postprocess_error(msg):
     m = str(msg).lower()
     return any(k in m for k in ("postprocessing", "conversion failed", "ffmpeg", "ffprobe"))
@@ -649,7 +637,7 @@ def tail_text(lines, n=6, limit=500):
 def log_error(url, msg, detail=""):
     """Guarda o erro em erros.log (ajuda a descobrir o motivo se acontecer de novo)."""
     try:
-        path = os.path.join(os.path.dirname(TOOLS_DIR), "erros.log")
+        path = LOG_PATH
         os.makedirs(os.path.dirname(path), exist_ok=True)
         if os.path.exists(path) and os.path.getsize(path) > 200_000:
             os.remove(path)
@@ -866,10 +854,375 @@ class BridgeServer:
 def quality_text(h):
     q = h.get("quality") or ""
     if q == LABEL_AUDIO:
-        return "MP3"
-    if q == LABEL_BEST:
-        return f"Melhor ({h['height']}p)" if h.get("height") else "Melhor qualidade"
-    return q
+        txt = "MP3"
+    elif q == LABEL_BEST:
+        txt = f"Melhor ({h['height']}p)" if h.get("height") else "Melhor qualidade"
+    else:
+        txt = q
+    extras = []
+    if h.get("compat"):
+        extras.append("H.264")
+    sec = h.get("section")
+    if sec:
+        extras.append("✂ " + section_text(sec))
+    if h.get("subs"):
+        extras.append("Legenda: " + h["subs"])
+    return "  •  ".join([txt] + extras)
+
+
+# ---------- Opções do download (H.264, legendas, trecho) ----------
+H264_FILTER = "[vcodec~='^(avc|h264)']"
+# conversão para H.264 + AAC em MP4 (abre no Premiere, Vegas, CapCut, celulares...)
+RECODE_ARGS = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+               "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
+SUBS_NONE = "Sem legendas"
+NOTE_FALLBACK = "formato ajustado para compatibilidade"
+NOTE_NO_RECODE = "sem converter para H.264: a conversão falhou"
+NOTE_NO_SUBS = "sem legenda: não foi possível baixá-la"
+LANG_NAMES = {
+    "pt": "Português", "pt-BR": "Português (Brasil)", "pt-PT": "Português (Portugal)",
+    "en": "Inglês", "en-US": "Inglês (EUA)", "en-GB": "Inglês (Reino Unido)",
+    "es": "Espanhol", "es-419": "Espanhol (América Latina)", "es-ES": "Espanhol (Espanha)",
+    "fr": "Francês", "de": "Alemão", "it": "Italiano", "ja": "Japonês", "ko": "Coreano",
+    "zh": "Chinês", "zh-Hans": "Chinês (simplificado)", "zh-Hant": "Chinês (tradicional)",
+    "ru": "Russo", "ar": "Árabe", "hi": "Hindi", "tr": "Turco", "pl": "Polonês",
+    "nl": "Holandês", "id": "Indonésio", "vi": "Vietnamita", "th": "Tailandês",
+}
+
+
+def lang_name(code):
+    code = code or ""
+    return LANG_NAMES.get(code) or LANG_NAMES.get(code.split("-")[0]) or code
+
+
+def subtitle_options(info):
+    """Legendas do vídeo: [(rótulo, idioma, automática)]. Legendas feitas pelo canal vêm
+    primeiro; das automáticas, só o idioma original, português e inglês (o YouTube oferece
+    traduções automáticas para dezenas de idiomas)."""
+    out, seen = [], set()
+
+    def name_of(entries, code):
+        if lang_name(code) != code:  # nome em português quando conhecemos o idioma
+            return lang_name(code)
+        for e in entries or []:
+            if e.get("name"):
+                return str(e["name"])
+        return code
+
+    manual = info.get("subtitles") or {}
+    for code in sorted(manual, key=lambda c: (not c.startswith("pt"), c)):
+        if code in ("live_chat", "rechat") or not manual[code]:
+            continue
+        out.append((name_of(manual[code], code), code, False))
+        seen.add(code.split("-")[0])
+    auto = info.get("automatic_captions") or {}
+    picks = [c for c in auto if c.endswith("-orig")][:1]
+    picks += [c for c in ("pt-BR", "pt", "en") if c in auto]
+    for code in picks:
+        base = code.replace("-orig", "").split("-")[0]
+        if base in seen or not auto[code]:
+            continue
+        seen.add(base)
+        label = name_of(auto[code], code.replace("-orig", "")).replace(" (Original)", "")
+        out.append((f"{label} (automática)", code, True))
+    labels = set()
+    unique = []
+    for label, code, is_auto in out:  # rótulos repetidos ganham o código do idioma
+        if label in labels:
+            label = f"{label} [{code}]"
+        labels.add(label)
+        unique.append((label, code, is_auto))
+    return unique
+
+
+def h264_heights(info):
+    """Alturas com vídeo H.264 e se o site informa os codecs."""
+    found, known = set(), False
+    for f in info.get("formats") or []:
+        v = f.get("vcodec")
+        if v and v != "none":
+            known = True
+            if f.get("height") and re.match(r"(avc|h264)", v):
+                found.add(f["height"])
+    return found, known
+
+
+def compat_plan(compat, choice, heights, h264set, known):
+    """Como entregar o vídeo em H.264: ("off"|"h264"|"recode"|"pref", altura)."""
+    if not compat or choice == LABEL_AUDIO:
+        return "off", None
+    if not known:
+        return "pref", None
+    if choice == LABEL_BEST:
+        # "Melhor qualidade" = melhor versão que já existe em H.264 (sem conversão demorada)
+        if h264set:
+            return "h264", max(h264set)
+        return "recode", max(heights) if heights else None
+    m = re.match(r"(\d+)p", choice or "")
+    h = int(m.group(1)) if m else None
+    if h and h in h264set:
+        return "h264", h
+    return "recode", h
+
+
+def parse_clock(text):
+    """'2:15', '1:02:05', '135' ou '2:15.5' -> segundos (None se inválido)."""
+    t = (text or "").strip().replace(",", ".")
+    if not t:
+        return None
+    parts = t.split(":")
+    if len(parts) > 3:
+        return None
+    try:
+        nums = [float(p) for p in parts]
+    except ValueError:
+        return None
+    if any(n < 0 for n in nums) or any(n >= 60 for n in nums[1:]):
+        return None
+    total = 0.0
+    for n in nums:
+        total = total * 60 + n
+    return total
+
+
+def clock_text(seconds):
+    """Tempo legível para o trecho: 2:15, 1:02:05 ou 2:15.5."""
+    seconds = max(0.0, float(seconds or 0))
+    whole = int(seconds)
+    frac = seconds - whole
+    h, rem = divmod(whole, 3600)
+    m, s = divmod(rem, 60)
+    txt = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+    if frac >= 0.05:
+        txt += f".{int(round(frac * 10)) % 10}"
+    return txt
+
+
+def section_text(sec):
+    return f"{clock_text(sec.get('start'))} a {clock_text(sec.get('end'))}"
+
+
+def section_tag(sec):
+    """Pedaço do nome do arquivo: 'trecho 2m15s-3m40s'."""
+    def one(v):
+        v = int(v or 0)
+        h, rem = divmod(v, 3600)
+        m, s = divmod(rem, 60)
+        return (f"{h}h" if h else "") + f"{m}m{s:02d}s"
+    return f"trecho {one(sec.get('start'))}-{one(sec.get('end'))}"
+
+
+def build_download_opts(choice, folder, ffmpeg, mode="off", height=None, sub=None,
+                        section=None):
+    """Monta as opções do yt-dlp para um download.
+    sub = (idioma, automática) ou None; section = {"start", "end", "exact"} ou None."""
+    has_ff = ffmpeg is not None
+    name = "%(title).150B [%(id)s]"
+    if section:
+        name += f" ({section_tag(section)})"
+    opts = {
+        "outtmpl": os.path.join(folder, name + ".%(ext)s"),
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "windowsfilenames": True,
+        "no_color": True,
+    }
+    if has_ff:
+        opts["ffmpeg_location"] = ffmpeg
+    pps = []
+    audio = choice == LABEL_AUDIO
+    if audio:
+        if has_ff:
+            opts["format"] = "bestaudio/best"
+            pps.append({"key": "FFmpegExtractAudio", "preferredcodec": "mp3",
+                        "preferredquality": "192"})
+        else:
+            opts["format"] = "bestaudio[ext=m4a]/bestaudio/best"
+    else:
+        if choice == LABEL_BEST:
+            fmt = "bv*+ba/b/best" if has_ff else "b/best"
+            hc = ""
+        else:
+            h = int(choice.replace("p", "").split()[0])
+            hc = f"[height<={h}]"
+            fmt = (f"bv*{hc}+ba/b{hc}/bv*+ba/b/best" if has_ff else f"b{hc}/b/best")
+        if has_ff:
+            opts["merge_output_format"] = "mp4"
+            # na mesma resolução, prefere MP4/AAC (toca em qualquer aparelho)
+            opts["format_sort"] = ["res", "ext:mp4:m4a"]
+            if mode == "h264":
+                hh = f"[height<={height}]" if height else hc
+                fmt = (f"bv*{H264_FILTER}{hh}+ba[acodec^=mp4a]/bv*{H264_FILTER}{hh}+ba/"
+                       f"b{H264_FILTER}{hh}/" + fmt)
+            elif mode == "pref":
+                opts["format_sort"] = ["vcodec:h264", "res", "acodec:aac", "ext:mp4:m4a"]
+            elif mode == "recode":
+                # junta em MKV (aceita qualquer codec) e converte para MP4 H.264
+                opts["merge_output_format"] = "mkv"
+                pps.append({"key": "FFmpegVideoConvertor", "preferedformat": "mp4"})
+                opts["postprocessor_args"] = {"videoconvertor": list(RECODE_ARGS)}
+        opts["format"] = fmt
+    if sub and has_ff:
+        code, is_auto = sub
+        opts["writesubtitles"] = not is_auto
+        opts["writeautomaticsub"] = bool(is_auto)
+        opts["subtitleslangs"] = [code]
+        opts["subtitlesformat"] = "srt/vtt/best"
+        pps.insert(0, {"key": "FFmpegSubtitlesConvertor", "format": "srt", "when": "before_dl"})
+        if not audio:  # embute no vídeo e mantém o .srt ao lado
+            pps.append({"key": "FFmpegEmbedSubtitle", "already_have_subtitle": True})
+    if section and has_ff:
+        opts["download_ranges"] = yt_dlp.utils.download_range_func(
+            None, [(float(section["start"]), float(section["end"]))])
+        # áudio é convertido de qualquer jeito: corta no ponto exato (sem custo extra visível)
+        opts["force_keyframes_at_cuts"] = bool(section.get("exact")) or audio
+    if pps:
+        opts["postprocessors"] = pps
+    return opts
+
+
+def strip_subs(opts):
+    """Mesmas opções, sem legendas."""
+    out = {k: v for k, v in opts.items() if k not in (
+        "writesubtitles", "writeautomaticsub", "subtitleslangs", "subtitlesformat")}
+    pps = [p for p in opts.get("postprocessors") or []
+           if p["key"] not in ("FFmpegSubtitlesConvertor", "FFmpegEmbedSubtitle")]
+    out.pop("postprocessors", None)
+    if pps:
+        out["postprocessors"] = pps
+    return out
+
+
+def download_plans(opts, quality, mode="off"):
+    """Receitas de download [(opções, nota)]: a pedida e, se a conversão falhar,
+    alternativas mais seguras. A nota aparece no fim ("Concluído, ...")."""
+    plans = [(dict(opts), None)]
+    base = opts
+    if mode == "recode":
+        base = {k: v for k, v in opts.items() if k != "postprocessor_args"}
+        pps = [p for p in opts.get("postprocessors") or [] if p["key"] != "FFmpegVideoConvertor"]
+        base.pop("postprocessors", None)
+        if pps:
+            base["postprocessors"] = pps
+        base["merge_output_format"] = "mp4"
+        plans.append((dict(base), NOTE_NO_RECODE))
+    if "merge_output_format" in base:
+        m = re.search(r"(\d+)p", quality or "")
+        hc = f"[height<={m.group(1)}]" if m else ""
+        # mesmos arquivos, mas juntando em MKV (aceita qualquer codec)
+        plans.append(({**base, "merge_output_format": "mkv"}, NOTE_FALLBACK))
+        # só H.264 + AAC (juntam em MP4 em qualquer ffmpeg)
+        plans.append(({**base, "format": (
+            f"bv*[vcodec^=avc1]{hc}+ba[acodec^=mp4a]/bv*[ext=mp4]{hc}+ba[ext=m4a]"
+            f"/b[ext=mp4]{hc}/b{hc}")}, NOTE_FALLBACK))
+        # arquivo único, sem precisar juntar nada
+        single = {k: v for k, v in base.items()
+                  if k not in ("merge_output_format", "format_sort")}
+        single["format"] = f"b{hc}/b"
+        plans.append((single, NOTE_FALLBACK))
+    elif any(p["key"] == "FFmpegExtractAudio" for p in opts.get("postprocessors") or []):
+        # MP3: se a conversão falhar, mantém o áudio original
+        single = {k: v for k, v in opts.items() if k != "postprocessors"}
+        pps = [p for p in opts["postprocessors"] if p["key"] != "FFmpegExtractAudio"]
+        if pps:
+            single["postprocessors"] = pps
+        single["format"] = "bestaudio[ext=m4a]/bestaudio/best"
+        plans.append((single, NOTE_FALLBACK))
+    return plans
+
+
+def is_subtitle_error(msg):
+    m = str(msg).lower()
+    return "subtitle" in m and ("unable to download" in m or "http error" in m or "429" in m)
+
+
+def thumbnail_candidates(info):
+    """Endereços das thumbnails, da melhor para a pior (a maior às vezes não existe)."""
+    thumbs = [t for t in (info.get("thumbnails") or []) if t.get("url")]
+    thumbs.sort(key=lambda t: (t.get("preference") or 0, (t.get("width") or 0) * (t.get("height") or 0)),
+                reverse=True)
+    urls = []
+    for u in [info.get("thumbnail")] + [t["url"] for t in thumbs]:
+        if u and u.startswith("http") and u not in urls:
+            urls.append(u)
+    return urls[:4]
+
+
+def best_thumbnail_url(info):
+    urls = thumbnail_candidates(info)
+    return urls[0] if urls else None
+
+
+def save_thumbnail_file(urls, folder, title, vid):
+    """Baixa a thumbnail em alta resolução e salva como JPG. Devolve (caminho, tamanho)."""
+    if isinstance(urls, str):
+        urls = [urls]
+    last = None
+    img = None
+    for url in urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                data = resp.read()
+            img = Image.open(io.BytesIO(data)).convert("RGB")
+            break
+        except Exception as e:  # noqa: BLE001  (tenta a próxima)
+            last = e
+    if img is None:
+        raise last or RuntimeError("Este vídeo não tem thumbnail.")
+    safe = yt_dlp.utils.sanitize_filename(title or "thumbnail", restricted=False)
+    safe = re.sub(r'[<>:"/\\|?*]', "_", safe).strip(" .")[:120] or "thumbnail"
+    base = f"{safe} [{vid}] - thumbnail" if vid else f"{safe} - thumbnail"
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, base + ".jpg")
+    n = 2
+    while os.path.exists(path):
+        path = os.path.join(folder, f"{base} ({n}).jpg")
+        n += 1
+    img.save(path, "JPEG", quality=95)
+    return path, img.size
+
+
+ISSUES_URL = "https://github.com/LagazYT/baixador-de-videos/issues/new"
+PP_TEXT = {
+    "Merger": "Juntando áudio e vídeo...",
+    "VideoConvertor": "Convertendo para MP4 H.264... isso pode levar alguns minutos.",
+    "EmbedSubtitle": "Colocando a legenda no vídeo...",
+    "ExtractAudio": "Convertendo para MP3...",
+}
+
+
+def build_report(ffmpeg, has_js, extra=""):
+    """Texto com as informações que ajudam a descobrir a causa de um problema."""
+    import platform
+    try:
+        ver = yt_dlp.version.__version__
+    except Exception:  # noqa: BLE001
+        ver = "?"
+    lines = [
+        f"Baixador de Vídeos {APP_VERSION} (Windows)",
+        f"Sistema: {platform.platform()}",
+        f"yt-dlp: {ver}",
+        f"FFmpeg: {'sim' if ffmpeg else 'não encontrado'}",
+        f"Deno (YouTube): {'sim' if has_js else 'não encontrado'}",
+        f"Estilo: {UI_STYLE}",
+        f"Data: {datetime.now():%d/%m/%Y %H:%M}",
+    ]
+    if extra:
+        lines += ["", "Último erro:", extra.strip()[:1500]]
+    try:
+        with open(LOG_PATH, encoding="utf-8", errors="replace") as f:
+            log = f.read()[-4000:]
+        if log.strip():
+            lines += ["", "Registro de erros (mais recentes):", log.strip()]
+    except OSError:
+        pass
+    text = "\n".join(lines)
+    home = os.path.expanduser("~")
+    if home and len(home) > 3:  # não expõe o nome de usuário do Windows
+        text = text.replace(home, "%USERPROFILE%")
+    return text
 
 
 def fmt_bytes(n):
@@ -1191,6 +1544,21 @@ class App(ctk.CTk):
         self.folder_var = ctk.StringVar(
             value=os.path.join(os.path.expanduser("~"), "Videos")
         )
+        # opções do download (1.6): H.264, legendas e trecho
+        self.compat_var = ctk.BooleanVar(value=bool(cfg0.get("compat_editors", False)))
+        self.sub_var = ctk.StringVar(value=SUBS_NONE)
+        self.trim_var = ctk.BooleanVar(value=False)
+        self.trim_start_var = ctk.StringVar(value="0:00")
+        self.trim_end_var = ctk.StringVar(value="")
+        self.trim_exact_var = ctk.BooleanVar(value=False)
+        self._sub_map = {}
+        self.video_heights = []
+        self.h264_set = set()
+        self.codec_known = False
+        self.pending_section = None
+        self.pending_compat = None
+        self.pending_sub = None
+        self.last_error_text = ""
 
         self._placeholder = ctk.CTkImage(
             light_image=arte.make_placeholder(THUMB_W * 2, THUMB_H * 2, light=True),
@@ -1377,9 +1745,81 @@ class App(ctk.CTk):
             side, variable=self.quality_var, values=["—"], height=40,
             corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
             button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2, dropdown_text_color=TEXT, text_color=TEXT,
-            state="disabled",
+            state="disabled", command=lambda _v: self._refresh_options(),
         )
         self.quality_menu.pack(anchor="w", fill="x", pady=(4, 0))
+        self.btn_thumb = ctk.CTkButton(
+            side, text="🖼  Salvar thumbnail", height=32, corner_radius=R(10),
+            fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
+            command=self.save_thumbnail, state="disabled",
+        )
+        self.btn_thumb.pack(anchor="w", pady=(8, 0))
+
+        # Card de opções do download (H.264, legendas e trecho)
+        opt_card = self._card(page)
+        opt_card.pack(fill="x", pady=(0, 12))
+        ctk.CTkLabel(
+            opt_card, text="Opções do download", anchor="w",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(anchor="w", padx=16, pady=(14, 8))
+        self.compat_switch = ctk.CTkSwitch(
+            opt_card, text="Compatível com editores (MP4 H.264)", variable=self.compat_var,
+            command=self._on_compat_toggle, progress_color=ACCENT,
+            button_color=("#ffffff", "#ececef"),
+        )
+        self.compat_switch.pack(anchor="w", padx=16)
+        self.compat_hint = ctk.CTkLabel(
+            opt_card, text="", anchor="w", justify="left", wraplength=640,
+            text_color=MUTED, font=ctk.CTkFont(size=12),
+        )
+        self.compat_hint.pack(anchor="w", fill="x", padx=16, pady=(2, 10))
+
+        srow = ctk.CTkFrame(opt_card, fg_color="transparent")
+        srow.pack(fill="x", padx=16, pady=(0, 10))
+        ctk.CTkLabel(srow, text="Legendas", anchor="w").pack(side="left")
+        self.sub_menu = ctk.CTkOptionMenu(
+            srow, variable=self.sub_var, values=[SUBS_NONE], width=250, height=34,
+            corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
+            button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2,
+            dropdown_text_color=TEXT, text_color=TEXT, state="disabled",
+            command=lambda _v: self._refresh_options(),
+        )
+        self.sub_menu.pack(side="left", padx=(10, 0))
+        self.sub_hint = ctk.CTkLabel(
+            srow, text="", anchor="w", justify="left", wraplength=330,
+            text_color=MUTED, font=ctk.CTkFont(size=12),
+        )
+        self.sub_hint.pack(side="left", fill="x", expand=True, padx=(10, 0))
+
+        self.trim_check = ctk.CTkCheckBox(
+            opt_card, text="Baixar só um trecho", variable=self.trim_var,
+            command=self._on_trim_toggle, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            border_color=MUTED, corner_radius=R(6),
+        )
+        self.trim_check.pack(anchor="w", padx=16, pady=(0, 14))
+        self.trim_box = ctk.CTkFrame(opt_card, fg_color="transparent")
+        trow = ctk.CTkFrame(self.trim_box, fg_color="transparent")
+        trow.pack(fill="x")
+        entry_kw = dict(width=96, height=34, corner_radius=R(10), border_width=ENTRY_BORDER,
+                        border_color=LINE, fg_color=CARD_2, justify="center")
+        ctk.CTkLabel(trow, text="Início", anchor="w").pack(side="left")
+        ctk.CTkEntry(trow, textvariable=self.trim_start_var, **entry_kw).pack(
+            side="left", padx=(8, 16))
+        ctk.CTkLabel(trow, text="Fim", anchor="w").pack(side="left")
+        ctk.CTkEntry(trow, textvariable=self.trim_end_var, **entry_kw).pack(
+            side="left", padx=(8, 16))
+        ctk.CTkCheckBox(
+            trow, text="Corte exato (mais lento)", variable=self.trim_exact_var,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER, border_color=MUTED,
+            corner_radius=R(6),
+        ).pack(side="left")
+        ctk.CTkLabel(
+            self.trim_box, anchor="w", justify="left", wraplength=640,
+            text_color=MUTED, font=ctk.CTkFont(size=12),
+            text=("Use minutos:segundos (ex.: 2:15) ou horas:minutos:segundos. Sem o corte "
+                  "exato, o vídeo pode começar até alguns segundos antes do ponto escolhido "
+                  "(o corte cai no quadro-chave mais próximo). O MP3 sempre sai no ponto exato."),
+        ).pack(anchor="w", fill="x", pady=(6, 0))
 
         # Card da pasta
         folder_card = self._card(page)
@@ -1456,7 +1896,156 @@ class App(ctk.CTk):
             anchor="w", justify="left", wraplength=700, text_color=MUTED,
         )
         self.status_label.pack(anchor="w", fill="x", padx=16, pady=(0, 14))
+        self._refresh_options()
 
+
+    # ---------- Opções do download (H.264, legendas, trecho) ----------
+    def _current_mode(self):
+        return compat_plan(bool(self.compat_var.get()), self.quality_var.get(),
+                           self.video_heights, self.h264_set, self.codec_known)
+
+    def _refresh_options(self):
+        """Atualiza as dicas e o estado das opções conforme o vídeo e a qualidade."""
+        choice = self.quality_var.get()
+        audio = choice == LABEL_AUDIO
+        if not self.video_info:
+            text = ("Salva em MP4 H.264 + AAC, o formato que abre no Premiere, Vegas, CapCut, "
+                    "DaVinci e em qualquer celular. Analise um link para ver como o vídeo vai sair.")
+        elif audio:
+            text = "Não se aplica ao MP3."
+        elif not self.compat_var.get():
+            text = ("Desligado: o vídeo vem no formato original do site (no YouTube, às vezes "
+                    "VP9 ou AV1, que alguns editores não abrem).")
+        else:
+            mode, h = self._current_mode()
+            if mode == "h264" and choice == LABEL_BEST:
+                text = (f"✔ Sai em MP4 H.264 na melhor versão que já existe nesse formato ({h}p), "
+                        "sem conversão. Para uma resolução maior, escolha-a na lista: o app "
+                        "converte depois do download.")
+            elif mode == "h264":
+                text = "✔ Sai em MP4 H.264 nessa qualidade, sem conversão."
+            elif mode == "recode":
+                q = f"em {h}p" if h else "nessa qualidade"
+                text = (f"Este vídeo não tem H.264 {q}: depois do download o app converte o "
+                        "vídeo. Pode levar alguns minutos (bem mais em 4K).")
+            else:
+                text = "O app escolhe a versão H.264 quando o site oferecer."
+        self.compat_hint.configure(text=text)
+
+        trim = bool(self.trim_var.get())
+        chosen = self.sub_var.get() != SUBS_NONE
+        if not self.video_info:
+            sub_text = ""
+        elif trim:
+            sub_text = "Legendas não são baixadas junto com um trecho."
+        elif not self._sub_map:
+            sub_text = "Este vídeo não tem legendas."
+        elif chosen and audio:
+            sub_text = "Com MP3, a legenda é salva como arquivo .srt."
+        elif chosen:
+            sub_text = "Vai embutida no vídeo e também como arquivo .srt."
+        else:
+            sub_text = f"{len(self._sub_map)} disponível(is)."
+        self.sub_hint.configure(text=sub_text)
+        ok = bool(self.video_info) and bool(self._sub_map) and not trim
+        self.sub_menu.configure(state="normal" if ok else "disabled")
+
+    def _on_compat_toggle(self):
+        update_settings(compat_editors=bool(self.compat_var.get()))
+        self._refresh_options()
+
+    def _show_trim(self, show):
+        if show:
+            self.trim_check.pack(pady=(0, 6))
+            self.trim_box.pack(fill="x", padx=16, pady=(0, 14), after=self.trim_check)
+        else:
+            self.trim_box.pack_forget()
+            self.trim_check.pack(pady=(0, 14))
+
+    def _on_trim_toggle(self):
+        self._show_trim(bool(self.trim_var.get()))
+        self._refresh_options()
+
+    def _read_section(self):
+        """Lê o trecho escolhido: (trecho ou None, mensagem de erro ou None)."""
+        if not self.trim_var.get():
+            return None, None
+        if self.ffmpeg is None:
+            return None, ("Para baixar só um trecho, o programa precisa do FFmpeg. Espere a "
+                          "instalação dos componentes terminar e tente de novo.")
+        start = parse_clock(self.trim_start_var.get())
+        end = parse_clock(self.trim_end_var.get())
+        if start is None:
+            return None, "Início inválido. Use minutos:segundos, por exemplo 2:15."
+        if end is None:
+            return None, "Fim inválido. Use minutos:segundos, por exemplo 3:40."
+        dur = (self.video_info or {}).get("duration")
+        if dur and start >= dur:
+            return None, f"O início passa do fim do vídeo ({clock_text(dur)})."
+        if dur and end > dur:
+            end = float(dur)
+        if end <= start:
+            return None, "O fim do trecho precisa ser depois do início."
+        if end - start < 1:
+            return None, "O trecho precisa ter pelo menos 1 segundo."
+        return {"start": start, "end": end, "exact": bool(self.trim_exact_var.get())}, None
+
+    def save_thumbnail(self):
+        info = self.video_info
+        if not info:
+            return
+        url = thumbnail_candidates(info)
+        if not url:
+            messagebox.showinfo("Thumbnail", "Este vídeo não tem thumbnail.")
+            return
+        self.btn_thumb.configure(state="disabled", text="Salvando...")
+        threading.Thread(
+            target=self._thumb_worker,
+            args=(url, self.folder_var.get().strip(), info.get("title"), info.get("id")),
+            daemon=True,
+        ).start()
+
+    def _thumb_worker(self, url, folder, title, vid):
+        try:
+            path, size = save_thumbnail_file(url, folder, title, vid)
+            self.events.put(("thumb_saved", path, size))
+        except Exception as e:  # noqa: BLE001
+            log_error(url[0] if url else "", f"Thumbnail: {e}")
+            self.events.put(("thumb_error", str(e)))
+
+    def copy_report(self):
+        text = build_report(self.ffmpeg, self.has_js, self.last_error_text)
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(text)
+            self.update()
+        except Exception as e:  # noqa: BLE001
+            messagebox.showerror("Erro", f"Não foi possível copiar: {e}")
+            return
+        messagebox.showinfo(
+            "Relatório copiado",
+            "O relatório de erro foi copiado. Cole (Ctrl+V) na mensagem para quem vai te "
+            "ajudar ou num relato no GitHub.\n\nEle traz a versão do programa, do Windows e "
+            "do yt-dlp e os últimos erros, sem o seu nome de usuário.",
+        )
+
+    def _show_error(self, msg):
+        self.last_error_text = msg
+        try:
+            HelpDialog(self, "Erro", msg[:1100], None,
+                       [("Copiar relatório de erro", self.copy_report, False, False)],
+                       self.ico_path)
+        except Exception:  # noqa: BLE001
+            messagebox.showerror("Erro", msg[:1100])
+
+    def _pp_hook(self, d):
+        if self.cancel_flag.is_set():
+            raise DownloadCancelled()
+        if d.get("status") == "started":
+            name = d.get("postprocessor")
+            text = PP_TEXT.get(name)
+            if text:
+                self.events.put(("pp", text, name == "VideoConvertor"))
 
     # ---------- Componentes (Deno / FFmpeg) ----------
     def _missing_components(self):
@@ -1931,6 +2520,31 @@ class App(ctk.CTk):
             variable=self.auto_update_var, progress_color=ACCENT, button_color=("#ffffff", "#ececef"),
             command=lambda: update_settings(auto_check_update=bool(self.auto_update_var.get())),
         ).pack(anchor="w", padx=16, pady=(6, 16))
+
+        # Problemas? (relatório de erro)
+        card_bug = self._card(page)
+        card_bug.pack(fill="x", pady=(0, 12), before=card3)
+        ctk.CTkLabel(
+            card_bug, text="Problemas?", font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", padx=16, pady=(16, 2))
+        ctk.CTkLabel(
+            card_bug, text_color=MUTED, anchor="w", justify="left", wraplength=620,
+            font=ctk.CTkFont(size=12),
+            text=("Se um download falhar, copie o relatório de erro e mande para quem está "
+                  "te ajudando, ou abra um relato no GitHub. Ele traz a versão do programa, "
+                  "do Windows e do yt-dlp e os últimos erros, sem o seu nome de usuário."),
+        ).pack(anchor="w", padx=16, pady=(0, 10))
+        brow2 = ctk.CTkFrame(card_bug, fg_color="transparent")
+        brow2.pack(fill="x", padx=16, pady=(0, 16))
+        ctk.CTkButton(
+            brow2, text="Copiar relatório de erro", width=190, height=36, corner_radius=R(10),
+            fg_color=ACCENT, hover_color=ACCENT_HOVER, command=self.copy_report,
+        ).pack(side="left")
+        ctk.CTkButton(
+            brow2, text="Relatar no GitHub", width=150, height=36, corner_radius=R(10),
+            fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
+            command=lambda: webbrowser.open(ISSUES_URL),
+        ).pack(side="left", padx=(8, 0))
 
         # versão atual no rodapé das configurações
         ctk.CTkLabel(
@@ -3056,6 +3670,9 @@ class App(ctk.CTk):
                 "duration": fmt_duration(ctx.get("duration")),
                 "quality": ctx.get("quality"),
                 "height": ctx.get("height"),
+                "compat": bool(ctx.get("compat")),
+                "section": ctx.get("section"),
+                "subs": ctx.get("subs") or "",
                 "path": path,
                 "size": os.path.getsize(path) if path and os.path.exists(path) else 0,
                 "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -3088,14 +3705,32 @@ class App(ctk.CTk):
                 pass
 
     def redownload(self, h):
-        """Baixa de novo, já com a mesma qualidade de antes."""
+        """Baixa de novo, já com a mesma qualidade (e opções) de antes."""
         if self.busy:
             messagebox.showinfo(
                 "Aguarde", "Espere a tarefa atual terminar para iniciar outra."
             )
             return
+        sec = h.get("section")
+        if sec:
+            HelpDialog(
+                self, "Baixar de novo",
+                f"Este download foi só um trecho ({section_text(sec)}). O que você quer "
+                "baixar agora?", None,
+                [(f"Só o trecho ({section_text(sec)})",
+                  lambda: self._redownload(h, sec), True, True),
+                 ("O vídeo inteiro", lambda: self._redownload(h, None), False, True)],
+                self.ico_path,
+            )
+            return
+        self._redownload(h, None)
+
+    def _redownload(self, h, section):
         self.url_var.set(h["url"])
         self.pending_quality = h.get("quality")
+        self.pending_section = section
+        self.pending_compat = bool(h.get("compat"))
+        self.pending_sub = h.get("subs") or None
         self.auto_download = True
         self.tabs.set("Baixar")
         self.analyze()
@@ -3109,6 +3744,7 @@ class App(ctk.CTk):
             return
         self.url_var.set(h["url"])
         self.pending_quality = None
+        self.pending_section = self.pending_compat = self.pending_sub = None
         self.auto_download = False
         self.tabs.set("Baixar")
         self.analyze()
@@ -3188,6 +3824,7 @@ class App(ctk.CTk):
 
     def _set_progress_mode(self, indeterminate):
         self.progress.stop()
+        self._indet = bool(indeterminate)
         if indeterminate:
             self.progress.configure(mode="indeterminate")
             self.progress.start()
@@ -3368,6 +4005,10 @@ class App(ctk.CTk):
         self.btn_download.configure(state="disabled")
         self.quality_menu.configure(state="disabled")
         self.video_info = None
+        self._sub_map = {}
+        self.sub_var.set(SUBS_NONE)
+        self.btn_thumb.configure(state="disabled")
+        self._refresh_options()
         self.title_label.configure(text="Carregando...")
         self.meta_label.configure(text="")
         self.thumb_label.configure(image=self._placeholder, text="")
@@ -3430,6 +4071,7 @@ class App(ctk.CTk):
             kind = "login" if (cookies_read or len(attempts) == 1) else "protected"
             self.events.put(("login_help", kind, url, login_msg))
         else:
+            log_error(url, last_msg)
             self.events.put(("error", f"Não foi possível analisar o link.\n{last_msg}"))
 
     def start_download(self):
@@ -3443,43 +4085,20 @@ class App(ctk.CTk):
             return
 
         choice = self.quality_var.get()
-        has_ff = self.ffmpeg is not None
-        opts = {
-            "outtmpl": os.path.join(folder, "%(title).150B [%(id)s].%(ext)s"),
-            "noplaylist": True,
-            "quiet": True,
-            "no_warnings": True,
-            "windowsfilenames": True,
-            "no_color": True,
-            "progress_hooks": [self._hook],
-            **self.js_opts,
-            **self.active_cookie_opts,
-        }
-        if has_ff:
-            opts["ffmpeg_location"] = self.ffmpeg
-
-        if choice == LABEL_AUDIO:
-            if has_ff:
-                opts["format"] = "bestaudio/best"
-                opts["postprocessors"] = [{
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }]
-            else:
-                opts["format"] = "bestaudio[ext=m4a]/bestaudio/best"
-        else:
-            if choice == LABEL_BEST:
-                fmt = "bv*+ba/b/best" if has_ff else "b/best"
-            else:
-                h = int(choice.replace("p", "").split()[0])
-                fmt = (f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b/best"
-                       if has_ff else f"b[height<={h}]/b/best")
-            opts["format"] = fmt
-            if has_ff:
-                opts["merge_output_format"] = "mp4"
-                # na mesma resolução, prefere MP4/AAC (toca em qualquer aparelho)
-                opts["format_sort"] = ["res", "ext:mp4:m4a"]
+        section, err = self._read_section()
+        if err:
+            messagebox.showwarning("Trecho do vídeo", err)
+            return
+        mode, height = self._current_mode()
+        sub_label = self.sub_var.get()
+        sub = None
+        if not section and sub_label in self._sub_map:
+            sub = self._sub_map[sub_label]
+        opts = build_download_opts(choice, folder, self.ffmpeg, mode, height, sub, section)
+        opts["progress_hooks"] = [self._hook]
+        opts["postprocessor_hooks"] = [self._pp_hook]
+        opts.update(self.js_opts)
+        opts.update(self.active_cookie_opts)
 
         vi = self.video_info or {}
         ctx = {
@@ -3489,42 +4108,27 @@ class App(ctk.CTk):
             "duration": vi.get("duration"),
             "quality": choice,
             "thumb": self.current_thumb,
+            "mode": mode,
+            "compat": mode != "off",
+            "section": section,
+            "subs": sub_label if sub else "",
         }
 
         self.cancel_flag.clear()
         self.set_busy(True)
         self.btn_download.configure(state="disabled")
-        self._set_progress_mode(indeterminate=False)
-        self.status_label.configure(text="Iniciando download...", text_color=MUTED)
+        # trecho: o FFmpeg baixa sem informar o progresso, então a barra fica em movimento
+        self._set_progress_mode(indeterminate=bool(section))
+        self.status_label.configure(
+            text=(f"Baixando o trecho de {section_text(section)}..." if section
+                  else "Iniciando download..."), text_color=MUTED)
         threading.Thread(
             target=self._download_worker, args=(opts, ctx), daemon=True
         ).start()
 
-    def _download_plans(self, opts, ctx):
-        """Receitas de download: a normal e, se a conversão falhar, alternativas mais seguras."""
-        plans = [dict(opts)]
-        if "merge_output_format" in opts:
-            m = re.search(r"(\d+)p", ctx.get("quality") or "")
-            hc = f"[height<={m.group(1)}]" if m else ""
-            # 2) mesmos arquivos, mas juntando em MKV (aceita qualquer codec)
-            plans.append({**opts, "merge_output_format": "mkv"})
-            # 3) só H.264 + AAC (juntam em MP4 em qualquer ffmpeg)
-            plans.append({**opts, "format": (
-                f"bv*[vcodec^=avc1]{hc}+ba[acodec^=mp4a]/bv*[ext=mp4]{hc}+ba[ext=m4a]"
-                f"/b[ext=mp4]{hc}/b{hc}")})
-            # 4) arquivo único, sem precisar juntar nada
-            single = {k: v for k, v in opts.items()
-                      if k not in ("merge_output_format", "format_sort")}
-            single["format"] = f"b{hc}/b"
-            plans.append(single)
-        elif opts.get("postprocessors"):  # MP3: se a conversão falhar, mantém o áudio original
-            single = {k: v for k, v in opts.items() if k != "postprocessors"}
-            single["format"] = "bestaudio[ext=m4a]/bestaudio/best"
-            plans.append(single)
-        return plans
-
     def _download_worker(self, opts, ctx):
-        plans = self._download_plans(opts, ctx)
+        mode = ctx.get("mode", "off")
+        plans = download_plans(opts, ctx.get("quality"), mode)
         debug_lines = []
 
         class _YDL(yt_dlp.YoutubeDL):
@@ -3532,12 +4136,14 @@ class App(ctk.CTk):
                 debug_lines.append(str(message))  # guarda a saída do FFmpeg
 
         last_msg = ""
-        retried_same = False
+        retried_same = mode == "recode"  # não repete uma conversão demorada
+        sub_note = None
         i = 0
         while i < len(plans):
+            plan, note = plans[i]
             logger = QuietLogger()
             try:
-                with _YDL({**plans[i], "logger": logger}) as ydl:
+                with _YDL({**plan, "logger": logger}) as ydl:
                     info = ydl.extract_info(ctx["url"], download=True) or {}
                     path = None
                     finished = info.get("requested_downloads") or []
@@ -3545,8 +4151,13 @@ class App(ctk.CTk):
                         path = finished[0].get("filepath")
                     if not path:
                         path = ydl.prepare_filename(info)
-                self.events.put(("done", {**ctx, "path": path,
-                                          "height": info.get("height"), "fallback": i > 0}))
+                notes = [n for n in (note, sub_note) if n]
+                self.events.put(("done", {
+                    **ctx, "path": path, "height": info.get("height"),
+                    "note": "; ".join(notes),
+                    "compat": bool(ctx.get("compat")) and note is None,
+                    "subs": "" if sub_note else ctx.get("subs", ""),
+                }))
                 return
             except DownloadCancelled:
                 self.events.put(("cancelled",))
@@ -3556,6 +4167,13 @@ class App(ctk.CTk):
                     self.events.put(("cancelled",))
                     return
                 last_msg = clean_msg(logger.last_error or str(e))
+                if sub_note is None and ctx.get("subs") and is_subtitle_error(last_msg):
+                    # a legenda falhou (o YouTube às vezes limita): baixa sem ela
+                    sub_note = NOTE_NO_SUBS
+                    plans = [(strip_subs(o), n) for o, n in plans]
+                    self.events.put(("status", "Não foi possível baixar a legenda. "
+                                               "Baixando o vídeo sem ela..."))
+                    continue
                 if is_postprocess_error(last_msg):
                     if i == 0 and not retried_same:
                         # Falha momentânea (antivírus lendo os arquivos recém-baixados,
@@ -3575,6 +4193,8 @@ class App(ctk.CTk):
                         continue
                 break
         msg = last_msg
+        detail = tail_text(debug_lines) if is_postprocess_error(msg) else ""
+        log_error(ctx.get("url", ""), msg, detail)
         if needs_login(msg):
             msg = LOGIN_HELP + "\n\nDetalhe: " + msg[:220]
         elif "format is not available" in msg or "Requested format" in msg:
@@ -3582,8 +4202,6 @@ class App(ctk.CTk):
                     "Abra o Terminal e rode:\nwinget install DenoLand.Deno\n"
                     "Depois feche e abra o programa de novo.")
         elif is_postprocess_error(msg):
-            detail = tail_text(debug_lines)
-            log_error(ctx.get("url", ""), msg, detail)
             msg += ("\n\nO programa tentou vários formatos e a conversão do vídeo falhou "
                     "em todos. Verifique se o antivírus não está bloqueando o FFmpeg e "
                     "tente outra qualidade na aba Baixar.")
@@ -3600,7 +4218,10 @@ class App(ctk.CTk):
             pct = (done / total * 100) if total else 0
             speed = d.get("speed")
             eta = d.get("eta")
-            txt = f"Baixando... {pct:.1f}%   ({fmt_bytes(done)} de {fmt_bytes(total)})"
+            if total:
+                txt = f"Baixando... {pct:.1f}%   ({fmt_bytes(done)} de {fmt_bytes(total)})"
+            else:
+                txt = f"Baixando... {fmt_bytes(done)}"
             if speed:
                 txt += f"   •   {fmt_bytes(speed)}/s"
             if eta:
@@ -3650,22 +4271,41 @@ class App(ctk.CTk):
                     self._on_cookie_locked(ev[1], ev[2])
                 elif kind == "status":
                     self.status_label.configure(text=ev[1], text_color=MUTED)
+                elif kind == "pp":
+                    self.status_label.configure(text=ev[1], text_color=MUTED)
+                    if ev[2] and not getattr(self, "_indet", False):
+                        self._set_progress_mode(indeterminate=True)
                 elif kind == "progress":
-                    self.progress.set(ev[1] / 100)
+                    if not getattr(self, "_indet", False):
+                        self.progress.set(ev[1] / 100)
                     self.status_label.configure(text=ev[2], text_color=MUTED)
                 elif kind == "done":
                     self.set_busy(False)
                     self.btn_download.configure(state="normal")
+                    self._set_progress_mode(indeterminate=False)
                     self.progress.set(1)
+                    note = ev[1].get("note")
                     self.status_label.configure(
-                        text=("✔ Concluído (formato ajustado para compatibilidade)" if ev[1].get("fallback")
-                              else "✔ Download concluído!"), text_color=SUCCESS
+                        text=(f"✔ Concluído, {note}." if note else "✔ Download concluído!"),
+                        text_color=SUCCESS,
                     )
                     self._on_download_done(ev[1])
+                elif kind == "thumb_saved":
+                    self.btn_thumb.configure(state="normal", text="🖼  Salvar thumbnail")
+                    w, h = ev[2]
+                    self.status_label.configure(
+                        text=f"🖼 Thumbnail salva ({w}×{h}): {os.path.basename(ev[1])}",
+                        text_color=SUCCESS)
+                elif kind == "thumb_error":
+                    self.btn_thumb.configure(
+                        state="normal" if self.video_info else "disabled",
+                        text="🖼  Salvar thumbnail")
+                    self._show_error("Não foi possível salvar a thumbnail.\n" + ev[1][:300])
                 elif kind == "cancelled":
                     self.set_busy(False)
                     self.btn_download.configure(state="normal")
                     self.progress.set(0)
+                    self._set_progress_mode(indeterminate=False)
                     self.status_label.configure(
                         text="Download cancelado.", text_color=MUTED
                     )
@@ -3720,7 +4360,7 @@ class App(ctk.CTk):
                     self.status_label.configure(
                         text="Ocorreu um erro.", text_color=ERROR
                     )
-                    messagebox.showerror("Erro", ev[1][:1100])
+                    self._show_error(ev[1])
         except queue.Empty:
             pass
         self.after(100, self._poll_events)
@@ -3751,6 +4391,34 @@ class App(ctk.CTk):
         self.quality_menu.configure(values=options, state="normal")
         self.quality_var.set(LABEL_BEST)
         self.btn_download.configure(state="normal")
+        self.btn_thumb.configure(
+            state="normal" if best_thumbnail_url(info) else "disabled",
+            text="🖼  Salvar thumbnail")
+
+        # dados para as opções: versões H.264, legendas e duração (trecho)
+        self.video_heights = list(heights)
+        self.h264_set, self.codec_known = h264_heights(info)
+        self._sub_map = {label: (code, auto) for label, code, auto in subtitle_options(info)}
+        self.sub_menu.configure(values=[SUBS_NONE] + list(self._sub_map))
+        self.sub_var.set(SUBS_NONE)
+        dur = info.get("duration")
+        self.trim_var.set(False)
+        self.trim_exact_var.set(False)
+        self.trim_start_var.set("0:00")
+        self.trim_end_var.set(clock_text(dur) if dur else "")
+        section = self.pending_section if self.auto_download else None
+        if section:
+            self.trim_var.set(True)
+            self.trim_start_var.set(clock_text(section.get("start")))
+            self.trim_end_var.set(clock_text(section.get("end")))
+            self.trim_exact_var.set(bool(section.get("exact")))
+        if self.auto_download and self.pending_compat:
+            self.compat_var.set(True)
+        if self.auto_download and self.pending_sub in self._sub_map:
+            self.sub_var.set(self.pending_sub)
+        self.pending_section = self.pending_compat = self.pending_sub = None
+        self._show_trim(bool(self.trim_var.get()))
+
         self.status_label.configure(
             text="Pronto para baixar. Escolha a qualidade.", text_color=MUTED
         )
@@ -3758,7 +4426,10 @@ class App(ctk.CTk):
             self.auto_download = False
             wanted, self.pending_quality = self.pending_quality, None
             self.quality_var.set(pick_quality(wanted, options))
+            self._refresh_options()
             self.start_download()
+        else:
+            self._refresh_options()
 
 
 if __name__ == "__main__":

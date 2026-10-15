@@ -5,6 +5,9 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Configurações e histórico do aplicativo (ficam só no aparelho). */
 object Store {
@@ -76,4 +79,23 @@ object Store {
 
     @Synchronized
     fun clearHistory() = saveHistory(JSONArray())
+
+    // ---------- registro de erros (vai no relatório de erro) ----------
+    @Synchronized
+    fun addError(url: String, msg: String) {
+        val old = errors()
+        val list = JSONArray()
+        list.put(JSONObject()
+            .put("date", SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR")).format(Date()))
+            .put("url", url)
+            .put("msg", msg.take(800)))
+        for (i in 0 until minOf(old.length(), 7)) list.put(old.get(i))
+        prefs.edit().putString("errors", list.toString()).apply()
+    }
+
+    fun errors(): JSONArray = try {
+        JSONArray(prefs.getString("errors", "[]") ?: "[]")
+    } catch (e: Exception) {
+        JSONArray()
+    }
 }

@@ -127,9 +127,11 @@ jobs:
             um link e downloads que continuam em segundo plano.
 
             ### Novidades
-            - **Novo estilo Steampunk:** latão, cobre e madeira, com engrenagens e rebites. Escolha em ⚙ › Estilo visual.
-            - Quem está na 1.4.0 pode atualizar direto pelo app, em ⚙ › Atualizações do aplicativo (mantém o histórico).
-              Versões beta anteriores à 1.4.0 precisam ser desinstaladas uma vez antes.
+            - **Compatível com editores (MP4 H.264):** o vídeo sai em H.264 + AAC, que abre no CapCut, VN, InShot, Premiere e em qualquer celular. Quando não existe H.264 na qualidade escolhida, o app converte depois do download (no celular isso pode demorar).
+            - **Baixar só um trecho:** escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão.
+            - **Legendas:** embutidas no vídeo e também como arquivo .srt.
+            - **Salvar thumbnail** em alta resolução e **relatório de erro** em ⚙ › Problemas?.
+            - Quem está na 1.4.0 ou 1.5.0 pode atualizar direto pelo app, em ⚙ › Atualizações do aplicativo.
 
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).

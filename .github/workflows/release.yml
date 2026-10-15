@@ -6,7 +6,7 @@ on:
   push:
     tags: ["v*"]
     branches: [main]
-    paths: ["app.py", "arte*.py", "requirements.txt", "installer.iss", "extensao_navegador/**", ".github/workflows/release.yml"]
+    paths: ["app.py", "arte*.py", "requirements.txt", "installer.iss", "extensao_navegador/**", "ci/**", ".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
@@ -108,14 +108,43 @@ jobs:
 
             ## Novidades da ${{ env.VERSION }}
 
-            - **Novo estilo Steampunk:** latão, cobre e madeira, com engrenagens, rebites e um manômetro no lugar do botão de play. Escolha em ⚙ › Estilo visual (funciona com tema claro e escuro).
-            - Continua tudo da 1.4.0: atualizações automáticas em ⚙ › Atualizações, aba ▶ Player e estilos Clássico, Cyberpunk e Retrô.
+            - **Compatível com editores (MP4 H.264):** nova opção na aba Baixar. O vídeo sai em H.264 + AAC, que abre no Premiere, Vegas, CapCut, DaVinci e em qualquer celular. Quando o vídeo não tem H.264 na qualidade escolhida (4K no YouTube, por exemplo), o programa converte depois do download.
+            - **Baixar só um trecho:** marque a opção, escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão. Há a opção de corte exato (mais lento).
+            - **Legendas:** escolha a legenda do vídeo; ela vem embutida no MP4 e também como arquivo .srt.
+            - **Salvar thumbnail:** salva a capa do vídeo em alta resolução (JPG) na pasta de downloads.
+            - **Relatório de erro:** em ⚙ › Problemas? e nas mensagens de erro, um botão copia as informações que ajudam a descobrir a causa de uma falha.
 
-            > Quem está na 1.4.0 recebe esta versão pela atualização automática. Quem está na 1.3.0 ou anterior instala manualmente uma vez.
+            > Quem está na 1.4.0 ou 1.5.0 recebe esta versão pela atualização automática. Quem está na 1.3.0 ou anterior instala manualmente uma vez.
 
             📱 A versão para Android (beta) está na [página da versão Android](https://github.com/${{ github.repository }}/releases/tag/android-v${{ env.VERSION }}).
 
             Produzido por Lagaz.
+
+      - name: Capturas de tela (diagnóstico)
+        id: shots
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        shell: pwsh
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}\appdata
+          PYTHONIOENCODING: utf-8
+        run: |
+          New-Item -ItemType Directory -Force $env:LOCALAPPDATA | Out-Null
+          foreach ($st in "classico", "steampunk") { $env:SHOT_STYLE = $st; python ci/ui_shots.py shots }
+
+      - name: Teste real no YouTube (diagnóstico)
+        id: smoke
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 15
+        shell: pwsh
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}\appdata
+          PYTHONIOENCODING: utf-8
+        run: |
+          if (Test-Path deno\deno.exe) { $env:PATH = "$PWD\deno;$env:PATH" }
+          python ci/youtube_smoke.py smoke *>&1 | Tee-Object -FilePath smoke.txt
 
       - name: Publicar o log (diagnóstico)
         if: always()
@@ -128,6 +157,8 @@ jobs:
           JSONEOF
           ls -la "$GITHUB_WORKSPACE/installer_output" > installer.txt 2>&1 || true
           ls -la "$GITHUB_WORKSPACE/dist/BaixadorDeVideos" > dist.txt 2>&1 || true
+          cp -r "$GITHUB_WORKSPACE/shots" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/smoke.txt" . 2>/dev/null || true
           git init -q -b ci-logs-desktop
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"

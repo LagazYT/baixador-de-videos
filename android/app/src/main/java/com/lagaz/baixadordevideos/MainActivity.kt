@@ -458,6 +458,28 @@ class MainActivity : Activity() {
         fun updateYtdlp() = Engine.updateNow()
 
         @JavascriptInterface
+        fun saveThumb(urlsJson: String, title: String, vid: String) {
+            val urls = try { org.json.JSONArray(urlsJson) } catch (e: Exception) { org.json.JSONArray() }
+            Engine.saveThumb(urls, title, vid)
+        }
+
+        /** Copia o relatório de erro e devolve o texto copiado. */
+        @JavascriptInterface
+        fun copyReport(lastError: String): String {
+            val text = Engine.report(lastError)
+            runOnUiThread {
+                try {
+                    val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("Relatório de erro", text))
+                    if (Build.VERSION.SDK_INT < 33) toast("Relatório de erro copiado.")
+                } catch (e: Exception) {
+                    toast("Não foi possível copiar o relatório.")
+                }
+            }
+            return text
+        }
+
+        @JavascriptInterface
         fun readClipboard(): String = try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = cm.primaryClip

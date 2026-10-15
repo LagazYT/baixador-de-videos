@@ -60,6 +60,32 @@
       <div id="vmeta" class="muted small"></div>
       <label class="lbl" for="quality">Qualidade</label>
       <select id="quality" disabled><option>—</option></select>
+      <button class="btn sm thumb-btn" id="btn-thumb" disabled>🖼 Salvar thumbnail</button>
+
+      <div class="opts">
+        <h4>Opções do download</h4>
+        <label class="switch"><input type="checkbox" id="opt-compat"><span></span>
+          Compatível com editores (MP4 H.264)</label>
+        <p id="compat-hint" class="muted small hint"></p>
+        <label class="lbl" for="subs">Legendas</label>
+        <select id="subs" disabled><option value="">Sem legendas</option></select>
+        <p id="subs-hint" class="muted small hint"></p>
+        <label class="switch"><input type="checkbox" id="opt-trim"><span></span>
+          Baixar só um trecho</label>
+        <div id="trim-box" class="hidden">
+          <div class="row trim-row">
+            <div class="grow"><label class="lbl" for="trim-start">Início</label>
+              <input id="trim-start" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
+            <div class="grow"><label class="lbl" for="trim-end">Fim</label>
+              <input id="trim-end" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-exact"><span></span>
+            Corte exato (mais lento)</label>
+          <p class="muted small hint">Use minutos:segundos (ex.: 2:15). Sem o corte exato, o vídeo pode
+            começar um pouco antes do ponto escolhido (o corte cai no quadro-chave mais próximo).
+            O MP3 sempre sai no ponto exato.</p>
+        </div>
+      </div>
       <div class="row">
         <button class="btn pri grow big" id="btn-download" disabled>⬇ Baixar</button>
         <button class="btn danger" id="btn-cancel" disabled>Cancelar</button>
@@ -225,6 +251,17 @@
       </div>
       <label class="switch"><input type="checkbox" id="opt-autocheck"><span></span>
         Verificar atualizações automaticamente</label>
+    </div>
+
+    <div class="card">
+      <h3>Problemas?</h3>
+      <p class="muted small">Se um download falhar, copie o relatório de erro e mande para quem está te
+        ajudando, ou abra um relato no GitHub. Ele traz a versão do app, do Android e do yt-dlp e os
+        últimos erros.</p>
+      <div class="row">
+        <button class="btn pri grow" id="btn-report">Copiar relatório de erro</button>
+        <button class="btn" id="btn-issues">Relatar no GitHub</button>
+      </div>
     </div>
 
     <div class="card">

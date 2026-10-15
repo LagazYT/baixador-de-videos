@@ -131,6 +131,20 @@ select:disabled { opacity:.6; }
 .btn.link-danger { background:transparent; color:var(--err); }
 .btn[disabled] { opacity:.45; pointer-events:none; }
 
+/* opções do download (1.6) */
+.thumb-btn { width:100%; margin-top:10px; }
+.opts { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+.opts h4 { margin:0 0 2px; font-size:14px; }
+.opts .switch { margin-top:12px; }
+.hint { margin:4px 0 0; line-height:1.4; }
+.hint:empty { display:none; }
+.trim-row { margin-top:0; }
+.trim-row .lbl { margin-top:10px; }
+.trim-row input { text-align:center; font-variant-numeric:tabular-nums; }
+body[data-style="cyberpunk"] .opts h4, body[data-style="retro"] .opts h4 { text-transform:uppercase; letter-spacing:.5px; font-size:13px; }
+body[data-style="steampunk"] .opts h4 { font-variant:small-caps; letter-spacing:.5px; font-size:15px; }
+body[data-style="retro"] .opts, body[data-style="steampunk"] .opts { border-top:2px dashed var(--line); }
+
 .thumb { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:var(--r-sm); background:var(--card2); display:block; }
 .video h2 { font-size:16px; margin:12px 0 2px; line-height:1.3; word-break:break-word; }
 

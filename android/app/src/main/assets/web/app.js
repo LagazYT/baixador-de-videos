@@ -17,7 +17,8 @@ const BAR_COLORS = {
 };
 const STYLES = ["classico", "cyberpunk", "retro", "steampunk"];
 const DEFAULTS = { theme: "dark", style: "classico", notify: true, clipboard: true, autoUpdate: true,
-  ignoredHosts: [], lastClip: "", autoCheckApp: true, lastAppCheck: 0, knownAppVersion: "" };
+  ignoredHosts: [], lastClip: "", autoCheckApp: true, lastAppCheck: 0, knownAppVersion: "", compat: false };
+const ISSUES_URL = "https://github.com/LagazYT/baixador-de-videos/issues/new";
 const APP_CHECK_EVERY = 12 * 3600 * 1000;
 
 const S = {
@@ -38,6 +39,8 @@ const S = {
   playing: null,        // item do histórico tocando no player
   version: "",
   appUpdate: null,      // informações da versão nova do app
+  pendingAuto: null,    // "Baixar de novo": opções a aplicar depois da análise
+  lastError: "",        // último erro (vai no relatório de erro)
 };
 
 /* ---------- ponte nativa (com simulação para testar no navegador) ---------- */
@@ -56,8 +59,11 @@ function makeMock() {
       if (/idade/.test(url)) return emit("analyzeError", { reqId: id, code: "login",
         msg: "ERROR: [youtube] abc: Sign in to confirm your age. Use --cookies-from-browser or --cookies" });
       if (/erro/.test(url)) return emit("analyzeError", { reqId: id, code: "generic", msg: "ERROR: Unsupported URL: " + url });
-      emit("analyzed", { reqId: id, url, title: "Vídeo de teste com um título bem comprido para ver a quebra de linha",
-        uploader: "Canal Exemplo", duration: "12:34", thumbnail: "", heights: [2160, 1080, 720, 480, 360] }); },
+      const nosubs = /semleg/.test(url);
+      emit("analyzed", { reqId: id, url, id: "abc123", title: "Vídeo de teste com um título bem comprido para ver a quebra de linha",
+        uploader: "Canal Exemplo", duration: "12:34", durationSec: 754, thumbnail: "", thumbs: ["https://i.ytimg.com/vi/abc/maxresdefault.webp", "https://i.ytimg.com/vi/abc/hqdefault.jpg"],
+        heights: [2160, 1080, 720, 480, 360], h264: [1080, 720, 480, 360], codecKnown: true,
+        subs: nosubs ? [] : [{ label: "Português (Brasil)", code: "pt-BR", auto: false }, { label: "Inglês (automática)", code: "en-orig", auto: true }] }); },
     search: (id, q, src) => { log("search", [q, src]);
       emit("searchResults", { reqId: id, results: [1, 2, 3, 4].map((i) => ({ url: "https://youtu.be/v" + i,
         title: "Resultado " + i + " para " + q, uploader: "Canal " + i, duration: "3:2" + i,
@@ -73,12 +79,14 @@ function makeMock() {
         clearInterval(timer);
         if (/falha/.test(d.url)) { Object.assign(mockJob, { status: "error", text: "Falha no download.", active: false });
           App.onEvent("job", Object.assign({}, mockJob)); App.onEvent("error", { code: "generic", msg: "ERROR: Postprocessing: Conversion failed!" }); return; }
-        Object.assign(mockJob, { status: "done", text: "Download concluído!", active: false });
+        const note = window.__mockNote || "";
+        Object.assign(mockJob, { status: "done", text: note ? "Concluído, " + note + "." : "Download concluído!", active: false });
         const e = { id: String(Date.now()), url: d.url, title: d.title, uploader: d.uploader, duration: d.duration,
           quality: d.quality, uri: "content://x/" + hist.length, mime: "video/mp4", name: d.title + ".mp4", size: 12345678,
-          date: "15/10/2026 10:00", thumb: d.thumb, exists: true, path: "Download/BaixadorDeVideos/" + d.title + ".mp4" };
+          date: "15/10/2026 10:00", thumb: d.thumb, exists: true, path: "Download/BaixadorDeVideos/" + d.title + ".mp4",
+          compat: d.compat !== "off" && d.compat !== undefined && !note, subs: d.section ? "" : (d.subLabel || ""), section: d.section || undefined };
         hist.unshift(e);
-        App.onEvent("job", Object.assign({}, mockJob)); App.onEvent("done", { entry: e, fallback: false });
+        App.onEvent("job", Object.assign({}, mockJob)); App.onEvent("done", { entry: e, note, fallback: !!note });
       }, 150); },
     cancel: () => { log("cancel"); if (timer) clearInterval(timer);
       if (mockJob) { Object.assign(mockJob, { status: "cancelled", text: "Download cancelado.", active: false });
@@ -106,6 +114,10 @@ function makeMock() {
     installAppUpdate: () => log("installAppUpdate"),
     setBars: (c, l) => log("setBars", [c, l]),
     toast: (m) => log("toast", m),
+    saveThumb: (u, t, id) => { log("saveThumb", [JSON.parse(u), t, id]);
+      if (window.__thumbFail) return emit("thumbError", { msg: "Não foi possível salvar a thumbnail.\nHTTP 404" });
+      emit("thumbSaved", { name: t + " [" + id + "] - thumbnail.jpg", w: 1280, h: 720, uri: "content://t" }); },
+    copyReport: (e) => { log("copyReport", e); return "Baixador de Vídeos 1.2.0 (Android)\nÚltimo erro:\n" + e + "\n[15/10/2026] https://youtu.be/erro\n"; },
     __setHistory: (h) => { hist = h; },
   };
 }
@@ -146,6 +158,51 @@ function qualityLabel(q, short) {
   if (q === "audio") return short ? "MP3" : "Somente áudio (MP3)";
   if (q === "best" || !q) return short ? "Melhor qualidade" : "Melhor qualidade disponível";
   return q + "p";
+}
+
+/* rótulo do histórico: qualidade + H.264 + trecho + legenda */
+function entryLabel(h) {
+  const parts = [qualityLabel(h.quality, true)];
+  if (h.compat) parts.push("H.264");
+  if (h.section) parts.push("✂ " + sectionText(h.section));
+  if (h.subs) parts.push("Legenda: " + h.subs);
+  return parts.join("  •  ");
+}
+
+/* "2:15", "1:02:05", "135", "2:15.5" ou "2 15" -> segundos (null se inválido) */
+function parseClock(text) {
+  let t = String(text || "").trim().replace(",", ".").replace(/\s+/g, ":");
+  if (!t) return null;
+  const parts = t.split(":");
+  if (parts.length > 3 || parts.some((p) => !/^\d+(\.\d+)?$/.test(p))) return null;
+  const nums = parts.map(Number);
+  if (nums.slice(1).some((n) => n >= 60)) return null;
+  return nums.reduce((acc, n) => acc * 60 + n, 0);
+}
+
+function clockText(sec) {
+  sec = Math.max(0, Number(sec) || 0);
+  const whole = Math.floor(sec), frac = sec - whole;
+  const h = Math.floor(whole / 3600), m = Math.floor((whole % 3600) / 60), s = whole % 60;
+  let t = h ? h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") : m + ":" + String(s).padStart(2, "0");
+  if (frac >= 0.05) t += "." + (Math.round(frac * 10) % 10);
+  return t;
+}
+
+function sectionText(sec) { return clockText(sec.start) + " a " + clockText(sec.end); }
+
+/* Como entregar em H.264: off | h264 (já existe) | recode (converte) | pref (site não informa codecs) */
+function compatPlan(compat, quality, v) {
+  if (!compat || quality === "audio") return { mode: "off", h: 0 };
+  if (!v || !v.codecKnown) return { mode: "pref", h: 0 };
+  const h264 = v.h264 || [], heights = v.heights || [];
+  if (quality === "best" || !quality) {
+    // "Melhor qualidade" = melhor versão que já existe em H.264 (sem conversão demorada)
+    if (h264.length) return { mode: "h264", h: Math.max.apply(null, h264) };
+    return { mode: "recode", h: heights.length ? Math.max.apply(null, heights) : 0 };
+  }
+  const h = parseInt(quality, 10);
+  return h264.includes(h) ? { mode: "h264", h } : { mode: "recode", h };
 }
 
 function hostOf(url) {
@@ -211,10 +268,20 @@ function errorHelp(msg, code) {
   if (code === "login") { loginHelp(msg); return; }
   if (code === "format") {
     modal("Formato indisponível", msg + "\n\nO YouTube muda com frequência. Atualize o motor de download e tente de novo.",
-      [{ label: "Atualizar agora", pri: true, fn: () => { showTab("config"); N.updateYtdlp(); } }]);
+      [{ label: "Atualizar agora", pri: true, fn: () => { showTab("config"); N.updateYtdlp(); } },
+       { label: "Copiar relatório de erro", keep: true, fn: copyReport }]);
     return;
   }
-  modal("Erro", msg);
+  modal("Erro", msg, [{ label: "Copiar relatório de erro", keep: true, fn: copyReport }]);
+}
+
+function copyReport() {
+  let text = "";
+  try { text = N.copyReport(S.lastError || "") || ""; } catch (e) { text = ""; }
+  // o relatório tem links: não sugerir download deles ao voltar para o app
+  const m = text.match(URL_RE);
+  if (m) { S.settings.lastClip = m[0]; saveSettings(); }
+  toast("Relatório copiado. Cole na mensagem para quem vai te ajudar.", 3500);
 }
 
 /* ---------- aparência ---------- */
@@ -261,6 +328,11 @@ function resetVideo(title) {
   $("#vmeta").textContent = "";
   $("#quality").innerHTML = "<option>—</option>";
   $("#quality").disabled = true;
+  $("#subs").innerHTML = '<option value="">Sem legendas</option>';
+  $("#opt-trim").checked = false;
+  $("#trim-box").classList.add("hidden");
+  $("#btn-thumb").disabled = true;
+  refreshOptions();
   updateButtons();
 }
 
@@ -298,8 +370,102 @@ function onAnalyzed(d) {
     .forEach(([v, l]) => { const o = document.createElement("option"); o.value = v; o.textContent = l; q.appendChild(o); });
   q.disabled = false;
   if (d.pendingQuality) q.value = d.pendingQuality;
+  // legendas, trecho e thumbnail
+  const sb = $("#subs");
+  sb.innerHTML = '<option value="">Sem legendas</option>';
+  (d.subs || []).forEach((x, i) => { const o = document.createElement("option"); o.value = String(i); o.textContent = x.label; sb.appendChild(o); });
+  $("#opt-trim").checked = false;
+  $("#opt-exact").checked = false;
+  $("#trim-start").value = "0:00";
+  $("#trim-end").value = d.durationSec ? clockText(d.durationSec) : "";
+  $("#btn-thumb").disabled = !((d.thumbs && d.thumbs.length) || d.thumbnail);
+  const pend = S.pendingAuto;
+  S.pendingAuto = null;
+  if (pend) {
+    if (pend.quality) q.value = pickQuality(pend.quality, d.heights || []);
+    if (pend.section) {
+      $("#opt-trim").checked = true;
+      $("#trim-start").value = clockText(pend.section.start);
+      $("#trim-end").value = clockText(pend.section.end);
+      $("#opt-exact").checked = !!pend.section.exact;
+    }
+    if (pend.compat) { $("#opt-compat").checked = true; }
+    if (pend.subs) {
+      const idx = (d.subs || []).findIndex((x) => x.label === pend.subs);
+      if (idx >= 0) sb.value = String(idx);
+    }
+  }
+  $("#trim-box").classList.toggle("hidden", !$("#opt-trim").checked);
+  refreshOptions();
   updateButtons();
   setStatus("Pronto para baixar. Escolha a qualidade.", "");
+  if (pend) downloadFromUi();
+}
+
+/* qualidade pedida, ou a maior abaixo dela */
+function pickQuality(wanted, heights) {
+  if (wanted === "best" || wanted === "audio") return wanted;
+  const w = parseInt(wanted, 10);
+  if (heights.includes(w)) return String(w);
+  const below = heights.filter((h) => h <= w);
+  return below.length ? String(Math.max.apply(null, below)) : "best";
+}
+
+/* ---------- opções do download (H.264, legendas, trecho) ---------- */
+function refreshOptions() {
+  const v = S.video, quality = $("#quality").value, audio = quality === "audio";
+  const compat = $("#opt-compat").checked;
+  let text;
+  if (!v) text = "Salva em MP4 H.264 + AAC, o formato que abre no CapCut, Premiere, VN, InShot e em qualquer celular.";
+  else if (audio) text = "Não se aplica ao MP3.";
+  else if (!compat) text = "Desligado: o vídeo vem no formato original do site (no YouTube, às vezes VP9 ou AV1, que alguns editores não abrem).";
+  else {
+    const p = compatPlan(true, quality, v);
+    if (p.mode === "h264" && quality === "best") text = "✔ Sai em MP4 H.264 na melhor versão que já existe nesse formato (" + p.h + "p), sem conversão. Para uma resolução maior, escolha-a na lista: o app converte depois do download.";
+    else if (p.mode === "h264") text = "✔ Sai em MP4 H.264 nessa qualidade, sem conversão.";
+    else if (p.mode === "recode") text = "Este vídeo não tem H.264 " + (p.h ? "em " + p.h + "p" : "nessa qualidade") + ": depois do download o app converte o vídeo. No celular isso pode demorar bastante (principalmente acima de 1080p).";
+    else text = "O app escolhe a versão H.264 quando o site oferecer.";
+  }
+  $("#compat-hint").textContent = text;
+  const trim = $("#opt-trim").checked;
+  const subs = (v && v.subs) || [];
+  const chosen = $("#subs").value !== "";
+  let st = "";
+  if (v) {
+    if (trim) st = "Legendas não são baixadas junto com um trecho.";
+    else if (!subs.length) st = "Este vídeo não tem legendas.";
+    else if (chosen && audio) st = "Com MP3, a legenda é salva como arquivo .srt.";
+    else if (chosen) st = "Vai embutida no vídeo e também como arquivo .srt.";
+    else st = subs.length + (subs.length === 1 ? " disponível." : " disponíveis.");
+  }
+  $("#subs-hint").textContent = st;
+  $("#subs").disabled = !v || !subs.length || trim;
+}
+
+/* trecho escolhido: { section } ou { error } */
+function readSection() {
+  if (!$("#opt-trim").checked) return { section: null };
+  const start = parseClock($("#trim-start").value), end0 = parseClock($("#trim-end").value);
+  if (start === null) return { error: "Início inválido. Use minutos:segundos, por exemplo 2:15." };
+  if (end0 === null) return { error: "Fim inválido. Use minutos:segundos, por exemplo 3:40." };
+  const dur = S.video && S.video.durationSec;
+  let end = end0;
+  if (dur && start >= dur) return { error: "O início passa do fim do vídeo (" + clockText(dur) + ")." };
+  if (dur && end > dur) end = dur;
+  if (end <= start) return { error: "O fim do trecho precisa ser depois do início." };
+  if (end - start < 1) return { error: "O trecho precisa ter pelo menos 1 segundo." };
+  return { section: { start, end, exact: $("#opt-exact").checked } };
+}
+
+function downloadFromUi() {
+  if (!S.video) return;
+  const quality = $("#quality").value;
+  const r = readSection();
+  if (r.error) { modal("Trecho do vídeo", r.error); return; }
+  const p = compatPlan($("#opt-compat").checked, quality, S.video);
+  const subIdx = $("#subs").value;
+  const sub = !r.section && subIdx !== "" ? (S.video.subs || [])[Number(subIdx)] : null;
+  startDownload(S.video, quality, { compat: p.mode, height: p.h, sub, section: r.section });
 }
 
 function onAnalyzeError(d) {
@@ -307,6 +473,8 @@ function onAnalyzeError(d) {
   if (d.reqId !== S.analyzeReq) return;
   busyBtn($("#btn-analyze"), false);
   setIndeterminate(false);
+  S.pendingAuto = null;
+  S.lastError = d.msg || "";
   resetVideo();
   setStatus("Não foi possível analisar o link.", "err");
   const box = $("#errbox");
@@ -323,16 +491,24 @@ function onAnalyzeError(d) {
   }
 }
 
-function startDownload(info, quality) {
+function startDownload(info, quality, o) {
   if (S.job && ACTIVE.includes(S.job.status)) {
     modal("Aguarde", "Já existe um download em andamento. Espere terminar para iniciar outro.");
     return;
   }
+  quality = quality || "best";
+  // sem opções explícitas (pesquisa, sugestão): usa a preferência de H.264
+  o = o || compatPlan(!!S.settings.compat, quality, info.codecKnown ? info : null);
+  if (!o.compat && o.mode) o = { compat: o.mode, height: o.h };
   $("#done-actions").classList.add("hidden");
-  N.download(JSON.stringify({
-    url: info.url, quality: quality || "best", title: info.title || "", uploader: info.uploader || "",
+  const payload = {
+    url: info.url, quality, title: info.title || "", uploader: info.uploader || "",
     duration: info.duration || "", thumb: info.thumbnail || info.thumb || "",
-  }));
+    compat: o.compat || "off", height: o.height || 0,
+  };
+  if (o.sub) { payload.subLang = o.sub.code; payload.subAuto = !!o.sub.auto; payload.subLabel = o.sub.label; }
+  if (o.section) payload.section = o.section;
+  N.download(JSON.stringify(payload));
 }
 
 function setStatus(text, cls) {
@@ -366,7 +542,8 @@ function onJob(j) {
 function onDone(d) {
   const e = d.entry;
   S.lastDone = e;
-  setStatus("✔ " + (d.fallback ? "Concluído (formato ajustado para compatibilidade)" : "Download concluído!") +
+  const note = d.note || (d.fallback ? "formato ajustado para compatibilidade" : "");
+  setStatus("✔ " + (note ? "Concluído, " + note + "." : "Download concluído!") +
     "\nSalvo em Download/BaixadorDeVideos/" + (e.name || ""), "ok");
   $("#done-actions").classList.remove("hidden");
   toast("Download concluído!");
@@ -384,9 +561,24 @@ $("#btn-paste").addEventListener("click", () => {
   $("#url").value = m ? m[0] : t;
   if (m) { S.settings.lastClip = m[0]; saveSettings(); analyze(m[0]); }
 });
-$("#btn-download").addEventListener("click", () => {
-  if (!S.video) return;
-  startDownload(S.video, $("#quality").value);
+$("#btn-download").addEventListener("click", downloadFromUi);
+$("#quality").addEventListener("change", refreshOptions);
+$("#subs").addEventListener("change", refreshOptions);
+$("#opt-compat").addEventListener("change", (e) => { S.settings.compat = e.target.checked; saveSettings(); refreshOptions(); });
+$("#opt-trim").addEventListener("change", (e) => {
+  $("#trim-box").classList.toggle("hidden", !e.target.checked);
+  refreshOptions();
+});
+["#trim-start", "#trim-end"].forEach((sel) => $(sel).addEventListener("blur", (e) => {
+  const v = parseClock(e.target.value);
+  if (v !== null) e.target.value = clockText(v);  // "1 30" -> "1:30"
+}));
+$("#btn-thumb").addEventListener("click", () => {
+  const v = S.video;
+  if (!v) return;
+  const urls = (v.thumbs && v.thumbs.length) ? v.thumbs : [v.thumbnail];
+  busyBtn($("#btn-thumb"), true, "Salvando");
+  N.saveThumb(JSON.stringify(urls), v.title || "thumbnail", v.id || "");
 });
 $("#btn-cancel").addEventListener("click", () => N.cancel());
 $("#btn-folder").addEventListener("click", () => N.openDownloads());
@@ -522,7 +714,7 @@ function renderHistory() {
     const el = document.createElement("div");
     el.className = "res";
     const who = [h.uploader, h.duration].filter(Boolean).join("  •  ");
-    const meta = [h.date, qualityLabel(h.quality, true), fmtBytes(h.size)].filter(Boolean).join("  •  ");
+    const meta = [h.date, entryLabel(h), fmtBytes(h.size)].filter(Boolean).join("  •  ");
     el.innerHTML = '<img class="sthumb" alt="">' +
       '<div class="info"><div class="t">' + esc(h.title) + "</div>" +
       (who ? '<div class="m">' + esc(who) + "</div>" : "") +
@@ -536,11 +728,8 @@ function renderHistory() {
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = h.thumb || img("placeholder");
-    el.querySelector('[data-a="again"]').addEventListener("click", () => {
-      startDownload({ url: h.url, title: h.title, uploader: h.uploader, duration: h.duration, thumb: h.thumb }, h.quality);
-      showTab("baixar");
-    });
-    el.querySelector('[data-a="pick"]').addEventListener("click", () => { showTab("baixar"); analyze(h.url); });
+    el.querySelector('[data-a="again"]').addEventListener("click", () => redownload(h));
+    el.querySelector('[data-a="pick"]').addEventListener("click", () => { S.pendingAuto = null; showTab("baixar"); analyze(h.url); });
     el.querySelector('[data-a="open"]').addEventListener("click", () => {
       if (!h.exists) {
         modal("Arquivo não encontrado", "Esse arquivo foi movido ou apagado. Use \"Baixar de novo\" para baixá-lo outra vez.");
@@ -562,6 +751,27 @@ function renderHistory() {
     more.addEventListener("click", () => { S.histLimit += 30; renderHistory(); });
     box.appendChild(more);
   }
+}
+
+/* "Baixar de novo": analisa o link e baixa com as mesmas opções (pergunta se era um trecho) */
+function redownload(h) {
+  if (S.job && ACTIVE.includes(S.job.status)) {
+    modal("Aguarde", "Já existe um download em andamento. Espere terminar para iniciar outro.");
+    return;
+  }
+  const go = (section) => {
+    S.pendingAuto = { quality: h.quality, section, compat: !!h.compat, subs: h.subs || "" };
+    showTab("baixar");
+    analyze(h.url);
+  };
+  if (h.section) {
+    modal("Baixar de novo", "Este download foi só um trecho (" + sectionText(h.section) + "). O que você quer baixar agora?", [
+      { label: "Só o trecho (" + sectionText(h.section) + ")", pri: true, fn: () => go(h.section) },
+      { label: "O vídeo inteiro", fn: () => go(null) },
+    ]);
+    return;
+  }
+  go(null);
 }
 
 let filterTimer = null;
@@ -609,7 +819,7 @@ function renderPlayerList() {
     el.className = "res" + (playing ? " playing" : "");
     el.innerHTML = '<img class="sthumb" alt="">' +
       '<div class="info"><div class="t">' + esc(h.title) + "</div>" +
-      '<div class="m">' + esc([h.uploader, h.duration, qualityLabel(h.quality, true)].filter(Boolean).join("  •  ")) + "</div>" +
+      '<div class="m">' + esc([h.uploader, h.duration, entryLabel(h)].filter(Boolean).join("  •  ")) + "</div>" +
       '<div class="b"><button class="btn pri sm" data-a="play">' + (playing ? "⏸ Tocando" : "▶ Assistir") + "</button></div></div>";
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
@@ -742,6 +952,8 @@ $("#btn-cookie-clear").addEventListener("click", () => {
   N.clearCookies(); setCookies(false); toast("cookies.txt removido.");
 });
 $("#btn-update").addEventListener("click", () => N.updateYtdlp());
+$("#btn-report").addEventListener("click", copyReport);
+$("#btn-issues").addEventListener("click", () => N.openUrl(ISSUES_URL));
 
 function setCookies(loaded) {
   const c = $("#st-cookies");
@@ -750,6 +962,7 @@ function setCookies(loaded) {
 }
 
 function fillSettings(state) {
+  $("#opt-compat").checked = !!S.settings.compat;
   $("#opt-notify").checked = !!S.settings.notify;
   $("#opt-clipboard").checked = !!S.settings.clipboard;
   $("#opt-autoupdate").checked = !!S.settings.autoUpdate;
@@ -907,7 +1120,7 @@ const App = {
       case "error":
         updateButtons();
         if (d.code === "busy") modal("Aguarde", d.msg);
-        else errorHelp("Falha no download.\n" + d.msg, d.code);
+        else { S.lastError = "Falha no download.\n" + d.msg; errorHelp(S.lastError, d.code); }
         break;
       case "history": S.history = d.items || []; S.histLoaded = true; renderHistory(); renderPlayerList(); break;
       case "cookies":
@@ -937,6 +1150,16 @@ const App = {
         toast("Permita \"Instalar apps desconhecidos\" para o Baixador de Vídeos e volte ao app.", 5000);
         break;
       case "focus": checkClipboard(); break;
+      case "thumbSaved":
+        busyBtn($("#btn-thumb"), false);
+        setStatus("🖼 Thumbnail salva (" + d.w + "×" + d.h + ") em Download/BaixadorDeVideos/" + (d.name || ""), "ok");
+        toast("Thumbnail salva!");
+        break;
+      case "thumbError":
+        busyBtn($("#btn-thumb"), false);
+        S.lastError = d.msg || "";
+        errorHelp(d.msg || "Não foi possível salvar a thumbnail.", "generic");
+        break;
       default: break;
     }
   },

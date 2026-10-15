@@ -31,6 +31,9 @@ Requisitos: Windows 10 ou 11 (64 bits).
 ## Recursos
 
 - **Baixar por link:** cole o link, veja a miniatura e escolha a qualidade (até 4K) ou só o áudio em MP3.
+- **Compatível com editores:** opção para salvar em MP4 H.264 + AAC, que abre no Premiere, Vegas, CapCut, DaVinci e em qualquer celular (converte quando o vídeo não tem H.264 na qualidade escolhida).
+- **Baixar só um trecho:** escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só essa parte, em vídeo ou MP3.
+- **Legendas e thumbnail:** legenda embutida no vídeo e em arquivo .srt; capa do vídeo em alta resolução com um clique.
 - **Pesquisar:** busque vídeos no YouTube e no SoundCloud e baixe direto do programa.
 - **Histórico:** todos os downloads ficam salvos, com botão para baixar de novo, abrir o arquivo ou a pasta.
 - **Sugestão enquanto você assiste:** com a extensão do navegador, o programa avisa quando um vídeo está tocando e oferece o download.
@@ -38,6 +41,7 @@ Requisitos: Windows 10 ou 11 (64 bits).
 - **Tema claro, escuro ou do sistema**, e opção de minimizar para a bandeja do sistema.
 - **Player embutido:** assista aos vídeos baixados na aba ▶ Player, com tela cheia, velocidade, repetir e próximo/anterior.
 - **Quatro estilos visuais:** Clássico (padrão), Cyberpunk (amarelo, vermelho e cinza), Retrô minimalista (creme, laranja e verde-petróleo) e Steampunk (latão, cobre e madeira, com engrenagens). Troque na aba ⚙.
+- **Relatório de erro:** se algo falhar, um botão copia as informações que ajudam a descobrir a causa.
 - **Tudo pronto:** FFmpeg e Deno já vêm no instalador.
 
 <p align="center">
@@ -46,8 +50,9 @@ Requisitos: Windows 10 ou 11 (64 bits).
 
 ## Android (beta)
 
-O app para celular tem os mesmos recursos: download por link com escolha de qualidade ou MP3, pesquisa,
-histórico, player embutido, estilos Clássico, Cyberpunk, Retrô e Steampunk e tema claro, escuro ou do sistema.
+O app para celular tem os mesmos recursos: download por link com escolha de qualidade ou MP3, MP4 compatível
+com editores, trecho do vídeo, legendas, thumbnail, pesquisa, histórico, player embutido, estilos Clássico,
+Cyberpunk, Retrô e Steampunk e tema claro, escuro ou do sistema.
 
 - **Instalar:** baixe o APK **arm64** na [página da versão Android](../../releases/tag/android-v1.5.0),
   toque nele e permita instalar apps dessa fonte quando o Android pedir.
