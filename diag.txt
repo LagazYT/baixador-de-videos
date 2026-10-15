@@ -1,0 +1,356 @@
+ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers
+  built with gcc 14.2.0 (Rev1, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.100 / 61. 19.100
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+[tcp @ 000001ca40e8d7c0] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 000001ca40e8d7c0] Successfully connected to 185.199.109.133 port 443
+[h264 @ 000001ca43462440] Reinit context to 320x192, pix_fmt: yuv420p
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf60.16.100
+  Duration: 00:00:20.00, start: 0.000000, bitrate: 640 kb/s
+  Stream #0:0[0x1](und): Video: h264 (Constrained Baseline), 1 reference frame (avc1 / 0x31637661), yuv420p(progressive, left), 320x180 [SAR 1:1 DAR 16:9], 638 kb/s, 25 fps, 25 tbr, 12800 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc60.31.102 libx264
+[tcp @ 000001ca4330fec0] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 000001ca4330fec0] Successfully connected to 185.199.109.133 port 443
+Input #1, mov,mp4,m4a,3gp,3g2,mj2, from 'https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a':
+  Metadata:
+    major_brand     : M4A 
+    minor_version   : 512
+    compatible_brands: M4A isomiso2
+    encoder         : Lavf60.16.100
+  Duration: 00:00:20.00, start: 0.000000, bitrate: 97 kb/s
+  Stream #1:0[0x1](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 96 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+[out#0/mp4 @ 000001ca43687600] Adding streams from explicit maps...
+[vost#0:0/copy @ 000001ca437a8b00] Created video stream from input stream 0:0
+[aost#0:1/copy @ 000001ca437a9500] Created audio stream from input stream 1:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (copy)
+  Stream #1:0 -> #0:1 (copy)
+Output #0, mp4, to 'file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4.part':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: h264 (Constrained Baseline), 1 reference frame (avc1 / 0x31637661), yuv420p(progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 638 kb/s, 25 fps, 25 tbr, 12800 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc60.31.102 libx264
+  Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 96 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+[out#0/mp4 @ 000001ca43687600] Starting thread...
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40] Starting thread...
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440] Starting thread...
+Press [q] to stop, [?] for help
+[tcp @ 000001ca4381bc00] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 000001ca40e8b4c0] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 000001ca40e8b4c0] Successfully connected to 185.199.109.133 port 443
+[tcp @ 000001ca4381bc00] Successfully connected to 185.199.109.133 port 443
+[aist#1:0/aac @ 000001ca43825dc0] All consumers of this stream are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440] All consumers are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440] Terminating thread with return code 0 (success)
+[out#0/mp4 @ 000001ca43687600] All streams finished
+[out#0/mp4 @ 000001ca43687600] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 000001ca40e8b240] All consumers of this stream are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40] All consumers are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40] Terminating thread with return code 0 (success)
+[AVIOContext @ 000001ca437b2b80] Statistics: 1043013 bytes written, 2 seeks, 7 writeouts
+[out#0/mp4 @ 000001ca43687600] Output file #0 (file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4.part):
+[out#0/mp4 @ 000001ca43687600]   Output stream #0:0 (video): 300 packets muxed (952420 bytes); 
+[out#0/mp4 @ 000001ca43687600]   Output stream #0:1 (audio): 302 packets muxed (84178 bytes); 
+[out#0/mp4 @ 000001ca43687600]   Total: 602 packets (1036598 bytes) muxed
+[out#0/mp4 @ 000001ca43687600] video:930KiB audio:82KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.618465%
+frame=  300 fps=0.0 q=-1.0 Lsize=    1019KiB time=00:00:07.00 bitrate=1192.0kbits/s speed=24.6x    
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40] Input file #0 (https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4):
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40]   Input stream #0:0 (video): 301 packets read (955962 bytes); 
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca40e8ba40]   Total: 301 packets (955962 bytes) demuxed
+[AVIOContext @ 000001ca4330fd80] Statistics: 977680 bytes read, 1 seeks
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440] Input file #1 (https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a):
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440]   Input stream #1:0 (audio): 303 packets read (84452 bytes); 
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000001ca43462440]   Total: 303 packets (84452 bytes) demuxed
+[AVIOContext @ 000001ca437bfe40] Statistics: 102398 bytes read, 1 seeks
+ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers
+  built with gcc 14.2.0 (Rev1, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.100 / 61. 19.100
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+[tcp @ 0000024fb017d700] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 0000024fb017d700] Successfully connected to 185.199.109.133 port 443
+[h264 @ 0000024fb0f4e340] Reinit context to 320x192, pix_fmt: yuv420p
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf60.16.100
+  Duration: 00:00:20.00, start: 0.000000, bitrate: 640 kb/s
+  Stream #0:0[0x1](und): Video: h264 (Constrained Baseline), 1 reference frame (avc1 / 0x31637661), yuv420p(progressive, left), 320x180 [SAR 1:1 DAR 16:9], 638 kb/s, 25 fps, 25 tbr, 12800 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc60.31.102 libx264
+[tcp @ 0000024fb1563c80] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 0000024fb1563c80] Successfully connected to 185.199.109.133 port 443
+Input #1, mov,mp4,m4a,3gp,3g2,mj2, from 'https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a':
+  Metadata:
+    major_brand     : M4A 
+    minor_version   : 512
+    compatible_brands: M4A isomiso2
+    encoder         : Lavf60.16.100
+  Duration: 00:00:20.00, start: 0.000000, bitrate: 97 kb/s
+  Stream #1:0[0x1](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 96 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+[out#0/mp4 @ 0000024fb0d40a00] Adding streams from explicit maps...
+[vost#0:0/libx264 @ 0000024fb0d59b40] Created video stream from input stream 0:0
+[aost#0:1/aac @ 0000024fb0d57fc0] Created audio stream from input stream 1:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (aac (native) -> aac (native))
+[vost#0:0/libx264 @ 0000024fb0d59b40] Starting thread...
+[aost#0:1/aac @ 0000024fb0d57fc0] Starting thread...
+[vf#0:0 @ 0000024fb1451ec0] Starting thread...
+[af#0:1 @ 0000024fb1452380] Starting thread...
+[vist#0:0/h264 @ 0000024fb0c58600] [dec:h264 @ 0000024fb102edc0] Starting thread...
+[aist#1:0/aac @ 0000024fb0c58980] [dec:aac @ 0000024fb102f400] Starting thread...
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980] Starting thread...
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40] Starting thread...
+Press [q] to stop, [?] for help
+[tcp @ 0000024fb0db8940] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 0000024fb0db43c0] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 0000024fb0db43c0] Successfully connected to 185.199.109.133 port 443
+[tcp @ 0000024fb0db8940] Successfully connected to 185.199.109.133 port 443
+[h264 @ 0000024fb0db3e40] Reinit context to 320x192, pix_fmt: yuv420p
+[graph_-1_in_1:0 @ 0000024fb2f22980] tb:1/44100 samplefmt:fltp samplerate:44100 chlayout:mono
+[graph -1 input from stream 0:0 @ 0000024fb2f22880] w:320 h:180 pixfmt:yuv420p tb:1/12800 fr:25/1 sar:1/1 csp:unknown range:unknown
+[graph -1 input from stream 0:0 @ 0000024fb2f22880] video frame properties congruent with link at pts_time: -5
+[libx264 @ 0000024fb0daab40] using SAR=1/1
+[libx264 @ 0000024fb0daab40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 0000024fb0daab40] profile High, level 1.2, 4:2:0, 8-bit
+[libx264 @ 0000024fb0daab40] 264 - core 164 r3192 c24e06c - H.264/MPEG-4 AVC codec - Copyleft 2003-2024 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_exato\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4.part':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: h264, 1 reference frame (avc1 / 0x31637661), yuv420p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 25 fps, 12800 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, delay 1024, 69 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 aac
+[out#0/mp4 @ 0000024fb0d40a00] Starting thread...
+[vf#0:0 @ 0000024fb1451ec0] Filtergraph returned EOF, finishing
+[vf#0:0 @ 0000024fb1451ec0] All consumers returned EOF
+[vist#0:0/h264 @ 0000024fb0c58600] [dec:h264 @ 0000024fb102edc0] Decoder returned EOF, finishing
+[vist#0:0/h264 @ 0000024fb0c58600] [dec:h264 @ 0000024fb102edc0] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0000024fb1451ec0] Terminating thread with return code 0 (success)
+[af#0:1 @ 0000024fb1452380] Filtergraph returned EOF, finishing
+[af#0:1 @ 0000024fb1452380] All consumers returned EOF
+[vist#0:0/h264 @ 0000024fb0c58600] All consumers of this stream are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980] All consumers are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980] Terminating thread with return code 0 (success)
+[vost#0:0/libx264 @ 0000024fb0d59b40] Encoder thread received EOF
+[af#0:1 @ 0000024fb1452380] Terminating thread with return code 0 (success)
+[aist#1:0/aac @ 0000024fb0c58980] [dec:aac @ 0000024fb102f400] Decoder returned EOF, finishing
+[aist#1:0/aac @ 0000024fb0c58980] [dec:aac @ 0000024fb102f400] Terminating thread with return code 0 (success)
+[aist#1:0/aac @ 0000024fb0c58980] All consumers of this stream are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40] All consumers are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40] Terminating thread with return code 0 (success)
+frame=  166 fps=0.0 q=28.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    
+[aost#0:1/aac @ 0000024fb0d57fc0] Encoder thread received EOF
+[vost#0:0/libx264 @ 0000024fb0d59b40] Terminating thread with return code 0 (success)
+[aost#0:1/aac @ 0000024fb0d57fc0] Terminating thread with return code 0 (success)
+[out#0/mp4 @ 0000024fb0d40a00] All streams finished
+[out#0/mp4 @ 0000024fb0d40a00] Terminating thread with return code 0 (success)
+[AVIOContext @ 0000024fb1f70bc0] Statistics: 272390 bytes written, 2 seeks, 5 writeouts
+[out#0/mp4 @ 0000024fb0d40a00] Output file #0 (file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_exato\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4.part):
+[out#0/mp4 @ 0000024fb0d40a00]   Output stream #0:0 (video): 175 frames encoded; 175 packets muxed (204230 bytes); 
+[out#0/mp4 @ 0000024fb0d40a00]   Output stream #0:1 (audio): 302 frames encoded (308700 samples); 303 packets muxed (60899 bytes); 
+[out#0/mp4 @ 0000024fb0d40a00]   Total: 478 packets (265129 bytes) muxed
+[out#0/mp4 @ 0000024fb0d40a00] video:199KiB audio:59KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.737158%
+frame=  175 fps=0.0 q=-1.0 Lsize=     266KiB time=00:00:06.92 bitrate= 314.9kbits/s speed=13.4x    
+[libx264 @ 0000024fb0daab40] frame I:1     Avg QP:21.66  size:  5028
+[libx264 @ 0000024fb0daab40] frame P:57    Avg QP:23.48  size:  1674
+[libx264 @ 0000024fb0daab40] frame B:117   Avg QP:29.51  size:   881
+[libx264 @ 0000024fb0daab40] consecutive B-frames:  6.3% 10.3% 10.3% 73.1%
+[libx264 @ 0000024fb0daab40] mb I  I16..4: 26.2% 45.8% 27.9%
+[libx264 @ 0000024fb0daab40] mb P  I16..4:  4.5%  4.9%  1.2%  P16..4: 17.1% 10.3%  6.9%  0.0%  0.0%    skip:55.0%
+[libx264 @ 0000024fb0daab40] mb B  I16..4:  0.4%  0.5%  0.1%  B16..8: 22.8%  7.2%  2.0%  direct: 3.3%  skip:63.7%  L0:49.1% L1:45.4% BI: 5.5%
+[libx264 @ 0000024fb0daab40] 8x8 transform intra:46.7% inter:38.7%
+[libx264 @ 0000024fb0daab40] coded y,uvDC,uvAC intra: 10.8% 44.4% 31.0% inter: 6.0% 19.4% 13.4%
+[libx264 @ 0000024fb0daab40] i16 v,h,dc,p: 69% 22%  9%  0%
+[libx264 @ 0000024fb0daab40] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 12%  8% 78%  1%  0%  0%  0%  0%  1%
+[libx264 @ 0000024fb0daab40] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 43% 21% 29%  1%  1%  1%  2%  1%  1%
+[libx264 @ 0000024fb0daab40] i8c dc,h,v,p: 45% 19% 34%  1%
+[libx264 @ 0000024fb0daab40] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0000024fb0daab40] ref P L0: 60.4%  8.0% 20.7% 10.8%
+[libx264 @ 0000024fb0daab40] ref B L0: 78.4% 17.9%  3.7%
+[libx264 @ 0000024fb0daab40] ref B L1: 90.3%  9.7%
+[libx264 @ 0000024fb0daab40] kb/s:232.62
+[aac @ 0000024fb1f6ee40] Qavg: 125.029
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980] Input file #0 (https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4):
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980]   Input stream #0:0 (video): 323 packets read (1021558 bytes); 310 frames decoded; 0 decode errors; 
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017b980]   Total: 323 packets (1021558 bytes) demuxed
+[AVIOContext @ 0000024fb102ffc0] Statistics: 1035536 bytes read, 1 seeks
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40] Input file #1 (https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a):
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40]   Input stream #1:0 (audio): 321 packets read (89481 bytes); 312 frames decoded; 0 decode errors (319488 samples); 
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 0000024fb017ed40]   Total: 321 packets (89481 bytes) demuxed
+[AVIOContext @ 0000024fb16dad00] Statistics: 102399 bytes read, 1 seeks
+ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers
+  built with gcc 14.2.0 (Rev1, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.100 / 61. 19.100
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+[tcp @ 0000017929c80fc0] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 0000017929c80fc0] Successfully connected to 185.199.109.133 port 443
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a':
+  Metadata:
+    major_brand     : M4A 
+    minor_version   : 512
+    compatible_brands: M4A isomiso2
+    encoder         : Lavf60.16.100
+  Duration: 00:00:20.00, start: 0.000000, bitrate: 97 kb/s
+  Stream #0:0[0x1](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 96 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+[out#0/ipod @ 000001792a7f72c0] No explicit maps, mapping streams automatically...
+[aost#0:0/aac @ 0000017929c92400] Created audio stream from input stream 0:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (aac (native) -> aac (native))
+[aost#0:0/aac @ 0000017929c92400] Starting thread...
+[af#0:0 @ 000001792a7fda80] Starting thread...
+[aist#0:0/aac @ 0000017929c8ab80] [dec:aac @ 000001792a800780] Starting thread...
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040] Starting thread...
+Press [q] to stop, [?] for help
+[tcp @ 000001792a809640] Starting connection attempt to 185.199.109.133 port 443
+[tcp @ 000001792a809640] Successfully connected to 185.199.109.133 port 443
+[graph_-1_in_0:0 @ 000001792a80c580] tb:1/44100 samplefmt:fltp samplerate:44100 chlayout:mono
+[ipod @ 0000017929c842c0] Warning, extension is not .m4a nor .m4v Quicktime/Ipod might not play the file
+Output #0, ipod, to 'file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).m4a.part':
+  Metadata:
+    major_brand     : M4A 
+    minor_version   : 512
+    compatible_brands: M4A isomiso2
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, delay 1024, 69 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 aac
+[out#0/ipod @ 000001792a7f72c0] Starting thread...
+[af#0:0 @ 000001792a7fda80] Filtergraph returned EOF, finishing
+[af#0:0 @ 000001792a7fda80] All consumers returned EOF
+[af#0:0 @ 000001792a7fda80] Terminating thread with return code 0 (success)
+[aist#0:0/aac @ 0000017929c8ab80] [dec:aac @ 000001792a800780] Decoder returned EOF, finishing
+[aist#0:0/aac @ 0000017929c8ab80] [dec:aac @ 000001792a800780] Terminating thread with return code 0 (success)
+[aist#0:0/aac @ 0000017929c8ab80] All consumers of this stream are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040] All consumers are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040] Terminating thread with return code 0 (success)
+[aost#0:0/aac @ 0000017929c92400] Encoder thread received EOF
+[aost#0:0/aac @ 0000017929c92400] Terminating thread with return code 0 (success)
+[out#0/ipod @ 000001792a7f72c0] All streams finished
+[out#0/ipod @ 000001792a7f72c0] Terminating thread with return code 0 (success)
+[AVIOContext @ 000001792a809380] Statistics: 45219 bytes written, 2 seeks, 4 writeouts
+[out#0/ipod @ 000001792a7f72c0] Output file #0 (file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).m4a.part):
+[out#0/ipod @ 000001792a7f72c0]   Output stream #0:0 (audio): 216 frames encoded (220500 samples); 217 packets muxed (43541 bytes); 
+[out#0/ipod @ 000001792a7f72c0]   Total: 217 packets (43541 bytes) muxed
+[out#0/ipod @ 000001792a7f72c0] video:0KiB audio:43KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 3.844652%
+size=      44KiB time=00:00:05.00 bitrate=  72.3kbits/s speed=21.9x    
+[aac @ 000001792a7fd380] Qavg: 421.001
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040] Input file #0 (https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a):
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040]   Input stream #0:0 (audio): 235 packets read (65542 bytes); 226 frames decoded; 0 decode errors (231424 samples); 
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0000017929c8b040]   Total: 235 packets (65542 bytes) demuxed
+[AVIOContext @ 000001792a93ecc0] Statistics: 87432 bytes read, 1 seeks
+ffmpeg escolhido: D:\a\_temp\appdata\BaixadorDeVideos\tools | yt-dlp: 2026.08.19
+imageio-ffmpeg: 0.6.0 C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\imageio_ffmpeg\binaries\ffmpeg-win-x86_64-v7.1.exe
+$ ffmpeg -version -> 0
+ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers
+built with gcc 14.2.0 (Rev1, Built by MSYS2 project)
+configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnut
+   tls: ['--enable-gnutls']
+$ ffmpeg -hide_banner -protocols -> 0
+Supported file protocols: Input: async cache concat concatf crypto data fd ffrtmpcrypt ffrtmphttp file ftp gopher gophers hls http httpproxy https mmsh mmst pipe rtmp rtmpe rtmps rtmpt rtmpte rtmpts rtp srtp subfile tcp tls udp udplite srt sftp zmq ipfs ipns Output: crypto fd ffrtmpcrypt ffrtmphttp file ftp gopher gophers http httpproxy https icecast md5 pipe prompeg rtmp rtmpe rtmps rtmpt rtmpte rtmpts rtp srtp tee tcp tls udp udplite srt sftp zmq
+OK inteiro: D:\a\baixador-de-videos\baixador-de-videos\diag\inteiro\Diagnóstico [diag].mp4
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -y -loglevel repeat+info -i "file:D:\a\baixador-de-videos\baixador-de-videos\diag\inteiro\Diagnóstico [diag].fv2160.webm" -i "file:D:\a\baixador-de-videos\baixador-de-videos\diag\inteiro\Diagnóstico [diag].fa.m4a" -c copy -map 0:v:0 -map 1:a:0 -movflags +faststart "file:D:\a\baixador-de-videos\baixador-de-videos\diag\inteiro\Diagnóstico [diag].temp.mp4"
+OK trecho: D:\a\baixador-de-videos\baixador-de-videos\diag\trecho\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -y -loglevel verbose -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+Accept-Language: en-us,en;q=0.5
+
+Sec-Fetch-Mode: navigate
+
+" -ss 5.0 -t 7.0 -i https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4 -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+Accept-Language: en-us,e
+OK trecho_exato: D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_exato\Diagnóstico [diag] (trecho 0m05s-0m12s).mp4
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -y -loglevel verbose -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+Accept-Language: en-us,en;q=0.5
+
+Sec-Fetch-Mode: navigate
+
+" -ss 5.0 -t 7.0 -i https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/avc.mp4 -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+Accept-Language: en-us,e
+OK trecho_mp3: D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).mp3
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -y -loglevel verbose -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+Accept-Language: en-us,en;q=0.5
+
+Sec-Fetch-Mode: navigate
+
+" -ss 3.0 -t 5.0 -i https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/aud.m4a -f ipod "file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).m4a.part"
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -i "file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).m4a"
+    [debug] ffmpeg command line: D:\a\_temp\appdata\BaixadorDeVideos\tools\ffmpeg -y -loglevel repeat+info -i "file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).m4a" -vn -acodec libmp3lame -b:a 192.0k -movflags +faststart "file:D:\a\baixador-de-videos\baixador-de-videos\diag\trecho_mp3\Diagnóstico [diag] (trecho 0m03s-0m08s).mp3"
