@@ -1,0 +1,37 @@
+name: Diagnóstico (Windows)
+
+on:
+  push:
+    branches: [main]
+    paths: ["ci/diag/**", ".github/workflows/diag.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependências
+        run: python -m pip install -r requirements.txt
+      - name: Diagnóstico do FFmpeg
+        continue-on-error: true
+        shell: pwsh
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}\appdata
+          PYTHONIOENCODING: utf-8
+        run: python ci/diag/ffmpeg_diag.py diag *>&1 | Tee-Object -FilePath diag.txt
+      - name: Publicar o resultado
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" && cp diag.txt "$RUNNER_TEMP/out/" 2>/dev/null || echo "sem saída" > "$RUNNER_TEMP/out/diag.txt"
+          cd "$RUNNER_TEMP/out"
+          git init -q -b ci-diag && git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "diag ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-diag
