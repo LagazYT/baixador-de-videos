@@ -70,7 +70,7 @@ class MainActivity : Activity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 view.setBackgroundColor(Color.BLACK)
                 web.visibility = View.GONE
-                setImmersive(true)
+                setFullscreenUi(true)
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             }
 
@@ -148,7 +148,7 @@ class MainActivity : Activity() {
     }
 
     @Suppress("DEPRECATION")
-    private fun setImmersive(on: Boolean) {
+    private fun setFullscreenUi(on: Boolean) {
         window.decorView.systemUiVisibility = if (on) {
             View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -162,7 +162,7 @@ class MainActivity : Activity() {
         (window.decorView as ViewGroup).removeView(v)
         fullView = null
         web.visibility = View.VISIBLE
-        setImmersive(false)
+        setFullscreenUi(false)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         try {
             fullCallback?.onCustomViewHidden()
