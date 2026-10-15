@@ -26,9 +26,27 @@ for args in (["-version"], ["-hide_banner", "-protocols"]):
     if args == ["-version"]:
         print("   tls:", [w for w in txt.split() if any(k in w for k in ("tls", "ssl", "schannel"))])
 
-URL = "https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
-for name, section in (("inteiro", None), ("trecho", {"start": 30, "end": 40, "exact": False}),
-                      ("trecho_exato", {"start": 30, "end": 40, "exact": True})):
+B = "https://raw.githubusercontent.com/LagazYT/baixador-de-videos/main/ci/diag/"
+HDR = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "en-us,en;q=0.5",
+       "Sec-Fetch-Mode": "navigate"}
+
+
+def fmt(fid, f, ext, v, a, h):
+    return {"format_id": fid, "url": B + f, "ext": ext, "vcodec": v, "acodec": a, "height": h,
+            "width": h * 16 // 9 if h else None, "protocol": "https", "http_headers": HDR}
+
+
+INFO = {"id": "diag", "title": "Diagnóstico", "ext": "mp4", "duration": 20,
+        "webpage_url": "https://example.com/diag", "extractor": "generic", "extractor_key": "Generic",
+        "formats": [fmt("a", "aud.m4a", "m4a", "none", "mp4a.40.2", None),
+                    fmt("v720", "avc.mp4", "mp4", "avc1.4d401f", "none", 720),
+                    fmt("v2160", "vp9.webm", "webm", "vp09.00.51.08", "none", 2160)]}
+
+for name, choice, section in (("inteiro", app.LABEL_BEST, None),
+                              ("trecho", "720p", {"start": 5, "end": 12, "exact": False}),
+                              ("trecho_exato", "720p", {"start": 5, "end": 12, "exact": True}),
+                              ("trecho_mp3", app.LABEL_AUDIO, {"start": 3, "end": 8})):
     lines = []
 
     class L:
@@ -38,11 +56,14 @@ for name, section in (("inteiro", None), ("trecho", {"start": 30, "end": 40, "ex
         def error(self, m): lines.append("ERR " + m)
 
     try:
-        o = app.build_download_opts(app.LABEL_BEST, os.path.join(OUT, name), FFDIR, "off", None, None, section)
+        o = app.build_download_opts(choice, os.path.join(OUT, name), FFDIR, "off", None, None, section)
         o.update(verbose=True, quiet=False, logger=L())
         with yt_dlp.YoutubeDL(o) as ydl:
-            res = ydl.extract_info(URL, download=True)
+            res = ydl.process_ie_result(dict(INFO), download=True)
         print(f"OK {name}:", res["requested_downloads"][0]["filepath"])
+        for l in lines:
+            if "ffmpeg command line" in l:
+                print("   ", l[:700])
     except Exception as e:  # noqa: BLE001
         print(f"FALHOU {name}: {e}")
         print("\n".join(l for l in lines if "ffmpeg" in l.lower() or "ERR" in l or "WARN" in l)[-3000:])
