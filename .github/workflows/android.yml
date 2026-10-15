@@ -142,3 +142,18 @@ jobs:
             3. Na primeira abertura o app prepara e atualiza o motor de download (precisa de internet, leva alguns segundos).
 
             Os vídeos ficam em **Download/BaixadorDeVideos**. Produzido por Lagaz.
+
+      - name: Apontar o link "Baixar para Android" do README para esta versão
+        if: success() && contains(github.event.head_commit.message, '[publicar]')
+        run: |
+          V="${{ steps.apks.outputs.version }}"
+          for i in 1 2 3; do
+            git fetch -q origin main && git checkout -q -f -B readme-sync origin/main
+            sed -i -E "s#android-v[0-9]+\.[0-9]+\.[0-9]+#android-v$V#g" README.md
+            if git diff --quiet README.md; then echo "README já aponta para android-v$V"; exit 0; fi
+            git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" \
+              commit -qm "README: link do Android aponta para a versão $V" README.md
+            git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:main && exit 0
+            sleep 5
+          done
+          echo "Não consegui atualizar o README" && exit 1

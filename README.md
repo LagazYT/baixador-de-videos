@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/tag/android-v1.3.0"><b>📱 Baixar para Android (beta)</b></a>
+  <a href="../../releases/tag/android-v1.5.0"><b>📱 Baixar para Android (beta)</b></a>
 </p>
 
 ---
@@ -49,7 +49,7 @@ Requisitos: Windows 10 ou 11 (64 bits).
 O app para celular tem os mesmos recursos: download por link com escolha de qualidade ou MP3, pesquisa,
 histórico, player embutido, estilos Clássico, Cyberpunk, Retrô e Steampunk e tema claro, escuro ou do sistema.
 
-- **Instalar:** baixe o APK **arm64** na [página da versão Android](../../releases/tag/android-v1.3.0),
+- **Instalar:** baixe o APK **arm64** na [página da versão Android](../../releases/tag/android-v1.5.0),
   toque nele e permita instalar apps dessa fonte quando o Android pedir.
 - **Baixar de qualquer app:** no YouTube, TikTok, Instagram ou no navegador, toque em **Compartilhar** e
   escolha **Baixador de Vídeos**.
