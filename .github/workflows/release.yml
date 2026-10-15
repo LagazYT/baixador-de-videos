@@ -108,7 +108,9 @@ jobs:
 
             ## Novidades da ${{ env.VERSION }}
 
-            As opções novas ficam na gaveta **Mais opções** da aba Baixar, que começa fechada: sem mexer nela, o download funciona como antes.
+            **Correção da 1.6.1:** o "Baixar só um trecho" falhava no Windows com "Requested format is not available" (o programa não achava o FFmpeg para baixar só a parte escolhida). Agora funciona e, se baixar só o trecho não der certo, o programa baixa o vídeo e corta o trecho no próprio computador. As mensagens de erro também mostram a causa real.
+
+            As opções novas da 1.6 ficam na gaveta **Mais opções** da aba Baixar, que começa fechada: sem mexer nela, o download funciona como antes.
 
             - **Compatível com editores (MP4 H.264):** O vídeo sai em H.264 + AAC, que abre no Premiere, Vegas, CapCut, DaVinci e em qualquer celular. Quando o vídeo não tem H.264 na qualidade escolhida (4K no YouTube, por exemplo), o programa converte depois do download.
             - **Baixar só um trecho:** marque a opção, escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão. Há a opção de corte exato (mais lento).
