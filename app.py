@@ -19,6 +19,7 @@ import webbrowser
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+import tkinter as tk
 from tkinter import filedialog, messagebox
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
@@ -70,6 +71,7 @@ STYLES = {
         CARD_BORDER=0,
         HUD=False,
         SHARP=False,
+        SOFT=False,
         FONT=None,
     ),
     "cyberpunk": dict(
@@ -101,10 +103,43 @@ STYLES = {
         CARD_BORDER=1,
         HUD=True,
         SHARP=True,
+        SOFT=False,
         FONT="Bahnschrift",  # fonte técnica que já vem no Windows 10/11
     ),
+    "retro": dict(
+        BG=("#f2ead8", "#1f1c19"),
+        CARD=("#fbf6ea", "#2a2622"),
+        CARD_2=("#e7dcc4", "#36312c"),
+        CARD_2_HOVER=("#dccfb2", "#433d36"),
+        LINE=("#2b2724", "#5a5148"),
+        ACCENT="#d9622b",
+        ACCENT_HOVER="#bf5223",
+        ON_ACCENT="#fbf6ea",
+        DANGER="#c0422b",
+        DANGER_HOVER="#a5361f",
+        MUTED=("#6e645a", "#aa9f91"),
+        SUCCESS=("#2f6f6a", "#5fb3a8"),
+        TEXT=("#2b2724", "#f2ead8"),
+        TEXT_SOFT=("#4a433c", "#ddd3bf"),
+        WARN=("#9a6a0c", "#e3a72f"),
+        ERROR=("#b0361f", "#f08060"),
+        BANNER_BG=("#f3e1b0", "#3a2f17"),
+        BANNER_TEXT=("#5a3f00", "#e3a72f"),
+        REMOVE_HOVER=("#f2d4c8", "#4a2a20"),
+        SEG_UNSEL=("#d8ccb2", "#4a433c"),
+        SEG_UNSEL_HOVER=("#cbbea2", "#57504a"),
+        SEG_TEXT=("#2b2724", "#f2ead8"),
+        ACCENT_TEXT=("#b04a1c", "#e3a72f"),
+        FOOTER_TEXT=("#2b2724", "#f2ead8"),
+        ENTRY_BORDER=2,
+        CARD_BORDER=2,
+        HUD=False,
+        SHARP=False,
+        SOFT=True,
+        FONT="Consolas",  # fonte de "máquina de escrever" que já vem no Windows
+    ),
 }
-STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk"}
+STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk", "Retrô": "retro"}
 DEFAULT_STYLE = "classico"
 UI_STYLE = DEFAULT_STYLE
 
@@ -130,8 +165,12 @@ def apply_style(name):
 
 
 def R(n):
-    """Raio dos cantos: o do clássico, ou quase reto no cyberpunk."""
-    return 2 if SHARP else n
+    """Raio dos cantos: o do clássico, quase reto no cyberpunk, suave no retrô."""
+    if SHARP:
+        return 2
+    if SOFT:
+        return min(n, 6)
+    return n
 
 
 apply_style(DEFAULT_STYLE)
@@ -139,7 +178,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.2.0"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.3.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(
@@ -285,6 +324,92 @@ def ffmpeg_location():
     except Exception:  # noqa: BLE001
         pass
     return None
+
+
+MPV_DLL_NAMES = ("libmpv-2.dll", "mpv-2.dll", "mpv-1.dll")
+MPV_RELEASES_API = "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
+VIDEO_EXTS = (".mp4", ".mkv", ".webm", ".mov", ".avi", ".m4v", ".mp3", ".m4a", ".opus",
+              ".ogg", ".wav", ".flac", ".aac")
+_mpv_module = None
+
+
+def mpv_dir():
+    """Pasta onde está o libmpv (o motor do player), ou None."""
+    for base in (APP_DIR, TOOLS_DIR):
+        for name in MPV_DLL_NAMES:
+            if os.path.exists(os.path.join(base, name)):
+                return base
+    return None
+
+
+def load_mpv():
+    """Carrega o python-mpv usando o libmpv encontrado. Retorna o módulo ou None."""
+    global _mpv_module
+    if _mpv_module is not None:
+        return _mpv_module
+    folder = mpv_dir()
+    if folder is None:
+        return None
+    os.environ["PATH"] = folder + os.pathsep + os.environ.get("PATH", "")
+    try:
+        os.add_dll_directory(folder)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        import mpv  # python-mpv
+
+        _mpv_module = mpv
+    except Exception:  # noqa: BLE001
+        return None
+    return _mpv_module
+
+
+def download_mpv(progress=None):
+    """Baixa o libmpv (compilação oficial de shinchiro) para a pasta de componentes."""
+    req = urllib.request.Request(MPV_RELEASES_API, headers={
+        "User-Agent": "BaixadorDeVideos", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.load(resp)
+    url = None
+    for asset in data.get("assets", []):
+        name = asset.get("name", "")
+        if name.startswith("mpv-dev-x86_64-") and "-v3-" not in name and name.endswith(".7z"):
+            url = asset.get("browser_download_url")
+            break
+    if not url:
+        raise RuntimeError("Componente do player não encontrado para download.")
+    import py7zr
+
+    tmp = tempfile.mkdtemp(prefix="bdv_mpv_")
+    try:
+        archive = os.path.join(tmp, "mpv.7z")
+        download_file(url, archive, progress)
+        out = os.path.join(tmp, "x")
+        with py7zr.SevenZipFile(archive, "r") as z:
+            z.extractall(path=out)
+        found = None
+        for root, _dirs, files in os.walk(out):
+            for f in files:
+                if f.lower() in MPV_DLL_NAMES:
+                    found = os.path.join(root, f)
+                    break
+            if found:
+                break
+        if not found:
+            raise RuntimeError("libmpv não encontrado no arquivo baixado.")
+        os.makedirs(TOOLS_DIR, exist_ok=True)
+        shutil.copy2(found, os.path.join(TOOLS_DIR, os.path.basename(found)))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def fmt_clock(seconds):
+    if seconds is None or seconds != seconds or seconds < 0:
+        return "00:00"
+    seconds = int(seconds)
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
 
 
 def find_deno():
@@ -921,6 +1046,14 @@ class App(ctk.CTk):
         self._last_toast_time = 0.0
         self._suggested = {}
         self._probing = False
+        self._mpv_failed = False
+        self.player = None
+        self.player_fs = None
+        self.player_fs_player = None
+        self.player_item = None
+        self._player_seeking = False
+        self._pending_seek = None
+        self._player_list_widgets = []
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.ico_path = None
         try:  # ícone personalizado de multimídia
@@ -1062,11 +1195,13 @@ class App(ctk.CTk):
         tab_dl = self.tabs.add("Baixar")
         tab_search = self.tabs.add("Pesquisar")
         tab_hist = self.tabs.add("Histórico")
+        tab_player = self.tabs.add("▶ Player")
         tab_cfg = self.tabs.add("⚙")
         page = ctk.CTkScrollableFrame(tab_dl, fg_color="transparent")
         page.pack(fill="both", expand=True)
         self._build_search_tab(tab_search)
         self._build_history_tab(tab_hist)
+        self._build_player_tab(tab_player)
         self._build_settings_tab(tab_cfg)
         try:  # engrenagem um pouco maior
             self.tabs._segmented_button._buttons_dict["⚙"].configure(
@@ -1220,6 +1355,8 @@ class App(ctk.CTk):
             missing.append("Deno")
         if not self.ffmpeg:
             missing.append("FFmpeg")
+        if mpv_dir() is None and not self._mpv_failed:
+            missing.append("Player")
         return missing
 
     def _show_banner(self, text):
@@ -1245,11 +1382,11 @@ class App(ctk.CTk):
         )
         threading.Thread(
             target=self._setup_worker,
-            args=(not self.has_js, not self.ffmpeg),
+            args=(not self.has_js, not self.ffmpeg, mpv_dir() is None),
             daemon=True,
         ).start()
 
-    def _setup_worker(self, need_deno, need_ffmpeg):
+    def _setup_worker(self, need_deno, need_ffmpeg, need_mpv=False):
         def make_cb(name):
             state = {"p": -1}
 
@@ -1287,6 +1424,12 @@ class App(ctk.CTk):
                         raise last_error
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
+            if need_mpv:
+                # o player é opcional: se falhar, o resto continua funcionando
+                try:
+                    download_mpv(make_cb("Player"))
+                except Exception:  # noqa: BLE001
+                    self._mpv_failed = True
             self.events.put(("setup_done",))
         except Exception as e:  # noqa: BLE001
             self.events.put(("setup_error", str(e)))
@@ -1525,7 +1668,8 @@ class App(ctk.CTk):
             font=ctk.CTkFont(size=12),
             text=("Muda as cores, as formas e as imagens do aplicativo. Clássico é o "
                   "visual principal; Cyberpunk usa amarelo, vermelho e cinza com cantos "
-                  "retos. O programa reinicia para aplicar."),
+                  "retos; Retrô é minimalista, em creme, laranja e verde-petróleo. "
+                  "O programa reinicia para aplicar."),
         ).pack(anchor="w", padx=16, pady=(0, 10))
         self.style_seg = ctk.CTkSegmentedButton(
             card_st, values=list(STYLE_LABELS), command=self._on_style_change,
@@ -1661,6 +1805,7 @@ class App(ctk.CTk):
         self._stop_tray()
         if self.bridge is not None:
             self.bridge.stop()
+        self._player_close()
         try:
             subprocess.Popen(cmd, cwd=os.getcwd(), close_fds=True)
         except Exception as e:  # noqa: BLE001
@@ -2005,7 +2150,438 @@ class App(ctk.CTk):
         self._stop_tray()
         if self.bridge is not None:
             self.bridge.stop()
+        self._player_close()
         self.destroy()
+
+    # ---------- Aba Player ----------
+    def _build_player_tab(self, tab):
+        top = self._card(tab)
+        top.pack(fill="both", expand=True, pady=(8, 10))
+
+        head = ctk.CTkFrame(top, fg_color="transparent")
+        head.pack(fill="x", padx=16, pady=(14, 6))
+        self.player_title = ctk.CTkLabel(
+            head, text="Nenhum vídeo tocando", anchor="w", justify="left", wraplength=520,
+            font=ctk.CTkFont(size=15, weight="bold"),
+        )
+        self.player_title.pack(side="left", fill="x", expand=True)
+        ctk.CTkButton(
+            head, text="Abrir arquivo...", width=120, height=30, corner_radius=R(8),
+            fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
+            command=self.player_open_file,
+        ).pack(side="right")
+
+        # área do vídeo (o libmpv desenha dentro deste quadro)
+        holder = ctk.CTkFrame(top, fg_color="#000000", corner_radius=R(10))
+        holder.pack(fill="both", expand=True, padx=16)
+        self.video_frame = tk.Frame(holder, bg="#000000", height=300, highlightthickness=0, bd=0)
+        self.video_frame.pack(fill="both", expand=True, padx=4, pady=4)
+        self.video_msg = tk.Label(
+            self.video_frame, bg="#000000", fg="#9ca3af", justify="center",
+            text="Escolha um vídeo da lista abaixo para assistir.", font=("Segoe UI", 11),
+        )
+        self.video_msg.place(relx=0.5, rely=0.5, anchor="center")
+        self.video_frame.bind("<Double-Button-1>", lambda e: self.player_fullscreen())
+
+        # barra de tempo
+        seek_row = ctk.CTkFrame(top, fg_color="transparent")
+        seek_row.pack(fill="x", padx=16, pady=(10, 0))
+        self.time_label = ctk.CTkLabel(seek_row, text="00:00 / 00:00", text_color=MUTED, width=110)
+        self.time_label.pack(side="right", padx=(8, 0))
+        self.seek_slider = ctk.CTkSlider(
+            seek_row, from_=0, to=1000, number_of_steps=1000, button_color=ACCENT,
+            button_hover_color=ACCENT_HOVER, progress_color=ACCENT, command=self._on_seek_drag,
+        )
+        self.seek_slider.set(0)
+        self.seek_slider.pack(side="left", fill="x", expand=True)
+        self.seek_slider.bind("<ButtonPress-1>", lambda e: setattr(self, "_player_seeking", True))
+        self.seek_slider.bind("<ButtonRelease-1>", self._on_seek_release)
+
+        # botões
+        ctrl = ctk.CTkFrame(top, fg_color="transparent")
+        ctrl.pack(fill="x", padx=16, pady=(8, 14))
+        btn = dict(width=44, height=36, corner_radius=R(10), fg_color=CARD_2,
+                   hover_color=CARD_2_HOVER, text_color=TEXT, font=ctk.CTkFont(size=15))
+        ctk.CTkButton(ctrl, text="⏮", command=lambda: self.player_step(-1), **btn).pack(side="left")
+        ctk.CTkButton(ctrl, text="↺10", command=lambda: self.player_seek_rel(-10),
+                      **dict(btn, width=52, font=ctk.CTkFont(size=13))).pack(side="left", padx=(6, 0))
+        self.play_btn = ctk.CTkButton(
+            ctrl, text="▶", width=64, height=36, corner_radius=R(10), fg_color=ACCENT,
+            hover_color=ACCENT_HOVER, font=ctk.CTkFont(size=16, weight="bold"),
+            command=self.player_toggle,
+        )
+        self.play_btn.pack(side="left", padx=(6, 0))
+        ctk.CTkButton(ctrl, text="10↻", command=lambda: self.player_seek_rel(10),
+                      **dict(btn, width=52, font=ctk.CTkFont(size=13))).pack(side="left", padx=(6, 0))
+        ctk.CTkButton(ctrl, text="⏭", command=lambda: self.player_step(1), **btn).pack(side="left", padx=(6, 0))
+
+        ctk.CTkButton(ctrl, text="⛶ Tela cheia", width=110, command=self.player_fullscreen,
+                      **{k: v for k, v in btn.items() if k != "width"}).pack(side="right")
+        self.speed_var = ctk.StringVar(value="1x")
+        ctk.CTkOptionMenu(
+            ctrl, variable=self.speed_var, values=["0.5x", "0.75x", "1x", "1.25x", "1.5x", "2x"],
+            width=78, height=36, corner_radius=R(10), fg_color=CARD_2, button_color=ACCENT,
+            button_hover_color=ACCENT_HOVER, dropdown_fg_color=CARD_2, dropdown_text_color=TEXT,
+            text_color=TEXT, command=self._on_speed,
+        ).pack(side="right", padx=(0, 8))
+        self.volume_slider = ctk.CTkSlider(
+            ctrl, from_=0, to=100, width=110, button_color=ACCENT, button_hover_color=ACCENT_HOVER,
+            progress_color=ACCENT, command=self._on_volume,
+        )
+        self.volume_slider.set(int(load_settings().get("player_volume", 80)))
+        self.volume_slider.pack(side="right", padx=(0, 8))
+        self.mute_btn = ctk.CTkButton(ctrl, text="🔊", command=self.player_mute, **btn)
+        self.mute_btn.pack(side="right", padx=(0, 4))
+        self.loop_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(ctrl, text="Repetir", variable=self.loop_var, command=self._on_loop,
+                        text_color=TEXT, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+                        width=80).pack(side="right", padx=(0, 10))
+
+        # biblioteca: vídeos baixados
+        lib = self._card(tab)
+        lib.pack(fill="x", pady=(0, 4))
+        lrow = ctk.CTkFrame(lib, fg_color="transparent")
+        lrow.pack(fill="x", padx=16, pady=(12, 6))
+        ctk.CTkLabel(lrow, text="Seus vídeos", font=ctk.CTkFont(size=14, weight="bold")).pack(side="left")
+        self.player_filter = ctk.StringVar()
+        ctk.CTkEntry(
+            lrow, textvariable=self.player_filter, height=32, width=240, corner_radius=R(10),
+            border_width=ENTRY_BORDER, border_color=LINE, fg_color=CARD_2,
+            placeholder_text="Filtrar...",
+        ).pack(side="right")
+        self.player_filter.trace_add("write", lambda *a: self._render_player_list())
+        self.player_list = ctk.CTkScrollableFrame(lib, fg_color="transparent", height=190)
+        self.player_list.pack(fill="x", padx=8, pady=(0, 10))
+        self._render_player_list()
+        self.after(250, self._player_poll)
+
+    def _player_items(self):
+        query = self.player_filter.get().strip().lower() if hasattr(self, "player_filter") else ""
+        items = []
+        for h in self.history:
+            path = h.get("path")
+            if not path or not os.path.exists(path):
+                continue
+            if query and query not in f"{h.get('title', '')} {h.get('uploader', '')}".lower():
+                continue
+            items.append(h)
+        return items
+
+    def _render_player_list(self):
+        if not hasattr(self, "player_list"):
+            return
+        for w in self._player_list_widgets:
+            try:
+                w.destroy()
+            except Exception:  # noqa: BLE001
+                pass
+        self._player_list_widgets = []
+        items = self._player_items()
+        if not items:
+            lbl = ctk.CTkLabel(
+                self.player_list, bg_color=CARD, text_color=MUTED,
+                text=("Nenhum vídeo baixado encontrado. Os vídeos que você baixar "
+                      "aparecem aqui para assistir."),
+            )
+            lbl.pack(pady=16)
+            self._player_list_widgets.append(lbl)
+            return
+        current = (self.player_item or {}).get("path")
+        for h in items[:60]:
+            playing = h.get("path") == current
+            row = ctk.CTkFrame(self.player_list, fg_color=CARD_2 if playing else "transparent",
+                               corner_radius=R(10), bg_color=CARD)
+            row.pack(fill="x", pady=2)
+            self._player_list_widgets.append(row)
+            title = h.get("title") or os.path.basename(h.get("path", ""))
+            if len(title) > 70:
+                title = title[:67] + "..."
+            meta = "  •  ".join(x for x in (h.get("uploader") or "", h.get("duration") or "",
+                                             quality_text(h)) if x)
+            ctk.CTkButton(
+                row, text="⏸" if playing else "▶", width=38, height=32, corner_radius=R(8),
+                fg_color=ACCENT, hover_color=ACCENT_HOVER,
+                command=lambda e=h: self.play_entry(e),
+            ).pack(side="left", padx=(8, 10), pady=6)
+            txt = ctk.CTkFrame(row, fg_color="transparent")
+            txt.pack(side="left", fill="x", expand=True)
+            ctk.CTkLabel(txt, text=title, anchor="w", text_color=ACCENT_TEXT if playing else TEXT,
+                         font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", fill="x")
+            ctk.CTkLabel(txt, text=meta, anchor="w", text_color=MUTED,
+                         font=ctk.CTkFont(size=11)).pack(anchor="w", fill="x")
+
+    # --- controle do libmpv ---
+    def _ensure_player(self):
+        if self.player is not None:
+            return True
+        m = load_mpv()
+        if m is None:
+            self._player_unavailable()
+            return False
+        try:
+            self.video_frame.update_idletasks()
+            self.player = self._new_mpv(m, self.video_frame, fullscreen=False)
+        except Exception as e:  # noqa: BLE001
+            self.player = None
+            messagebox.showerror("Player", f"Não foi possível iniciar o player.\n\n{e}")
+            return False
+        self.video_msg.place_forget()
+        return True
+
+    def _new_mpv(self, m, frame, fullscreen):
+        p = m.MPV(
+            wid=str(int(frame.winfo_id())),
+            osc=fullscreen,
+            input_default_bindings=True,
+            input_vo_keyboard=True,
+            keep_open="yes",
+            idle="yes",
+            hwdec="auto-safe",
+            ytdl=False,
+        )
+        p.volume = float(self.volume_slider.get())
+        try:
+            p.speed = float(self.speed_var.get().rstrip("x"))
+        except Exception:  # noqa: BLE001
+            pass
+        if fullscreen:
+            for key in ("ESC", "f", "MBTN_LEFT_DBL"):
+                try:
+                    p.on_key_press(key)(lambda: self.events.put(("player_exit_fs",)))
+                except Exception:  # noqa: BLE001
+                    pass
+        return p
+
+    def _player_unavailable(self):
+        if self._mpv_failed or mpv_dir() is not None:
+            text = ("O player do aplicativo não pôde ser carregado. O vídeo vai abrir "
+                    "no player do Windows.")
+        else:
+            text = ("O player precisa de um componente (cerca de 30 MB), baixado "
+                    "automaticamente. Aguarde a faixa de preparação no topo terminar.")
+            self._maybe_setup()
+        self.video_msg.configure(text=text)
+        self.video_msg.place(relx=0.5, rely=0.5, anchor="center")
+
+    def _active_player(self):
+        return self.player_fs_player if self.player_fs is not None else self.player
+
+    def play_entry(self, h):
+        path = h.get("path")
+        if not path or not os.path.exists(path):
+            messagebox.showwarning(
+                "Arquivo não encontrado",
+                "Esse arquivo foi movido ou apagado. Use \"Baixar de novo\" para baixá-lo outra vez.",
+            )
+            return
+        self.tabs.set("▶ Player")
+        self.player_item = h
+        self.player_title.configure(text=h.get("title") or os.path.basename(path))
+        if not self._ensure_player():
+            if self._mpv_failed or mpv_dir() is not None:
+                self.hist_open(h)
+            return
+        try:
+            self.player.loop_file = "inf" if self.loop_var.get() else "no"
+            self.player.play(path)
+            self.player.pause = False
+        except Exception as e:  # noqa: BLE001
+            messagebox.showerror("Player", f"Não foi possível tocar o arquivo.\n\n{e}")
+        self._render_player_list()
+
+    def player_open_file(self):
+        exts = " ".join("*" + e for e in VIDEO_EXTS)
+        path = filedialog.askopenfilename(
+            title="Escolha um vídeo ou áudio",
+            filetypes=[("Vídeos e áudios", exts), ("Todos os arquivos", "*.*")],
+        )
+        if path:
+            self.play_entry({"path": path, "title": os.path.basename(path)})
+
+    def player_toggle(self):
+        p = self._active_player()
+        if p is None:
+            items = self._player_items()
+            if items:
+                self.play_entry(items[0])
+            return
+        try:
+            if p.idle_active and self.player_item:
+                p.play(self.player_item["path"])
+                p.pause = False
+            else:
+                p.pause = not p.pause
+        except Exception:  # noqa: BLE001
+            pass
+
+    def player_seek_rel(self, seconds):
+        p = self._active_player()
+        if p is None:
+            return
+        try:
+            p.seek(seconds, reference="relative")
+        except Exception:  # noqa: BLE001
+            pass
+
+    def player_step(self, delta):
+        items = self._player_items()
+        if not items:
+            return
+        current = (self.player_item or {}).get("path")
+        idx = next((i for i, h in enumerate(items) if h.get("path") == current), -1)
+        nxt = items[(idx + delta) % len(items)] if idx >= 0 else items[0]
+        self.play_entry(nxt)
+
+    def player_mute(self):
+        p = self._active_player()
+        if p is None:
+            return
+        try:
+            p.mute = not p.mute
+            self.mute_btn.configure(text="🔇" if p.mute else "🔊")
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _on_volume(self, value):
+        update_settings(player_volume=int(value))
+        for p in (self.player, getattr(self, "player_fs_player", None)):
+            if p is not None:
+                try:
+                    p.volume = float(value)
+                except Exception:  # noqa: BLE001
+                    pass
+
+    def _on_speed(self, value):
+        for p in (self.player, getattr(self, "player_fs_player", None)):
+            if p is not None:
+                try:
+                    p.speed = float(value.rstrip("x"))
+                except Exception:  # noqa: BLE001
+                    pass
+
+    def _on_loop(self):
+        for p in (self.player, getattr(self, "player_fs_player", None)):
+            if p is not None:
+                try:
+                    p.loop_file = "inf" if self.loop_var.get() else "no"
+                except Exception:  # noqa: BLE001
+                    pass
+
+    def _on_seek_drag(self, value):
+        p = self._active_player()
+        if p is None:
+            return
+        try:
+            dur = p.duration or 0
+            self.time_label.configure(text=f"{fmt_clock(dur * value / 1000)} / {fmt_clock(dur)}")
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _on_seek_release(self, _event=None):
+        self._player_seeking = False
+        p = self._active_player()
+        if p is None:
+            return
+        try:
+            dur = p.duration or 0
+            if dur > 0:
+                p.seek(dur * self.seek_slider.get() / 1000, reference="absolute")
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _player_poll(self):
+        p = self._active_player()
+        if p is not None:
+            try:
+                pos = p.time_pos
+                dur = p.duration
+                if self._pending_seek is not None and dur:
+                    p.seek(self._pending_seek, reference="absolute")
+                    self._pending_seek = None
+                if not self._player_seeking:
+                    self.time_label.configure(text=f"{fmt_clock(pos)} / {fmt_clock(dur)}")
+                    self.seek_slider.set(int(1000 * (pos or 0) / dur) if dur else 0)
+                paused = bool(p.pause) or bool(p.idle_active)
+                self.play_btn.configure(text="▶" if paused else "⏸")
+            except Exception:  # noqa: BLE001
+                pass
+        self.after(250, self._player_poll)
+
+    # --- tela cheia: recria o player numa janela própria e continua do mesmo ponto ---
+    def player_fullscreen(self):
+        if self.player_fs is not None:
+            self._exit_fullscreen()
+            return
+        if self.player is None or not self.player_item:
+            return
+        m = load_mpv()
+        if m is None:
+            return
+        try:
+            pos = self.player.time_pos or 0
+            paused = bool(self.player.pause)
+            self.player.pause = True
+        except Exception:  # noqa: BLE001
+            pos, paused = 0, False
+        win = tk.Toplevel(self)
+        win.configure(bg="#000000")
+        win.attributes("-fullscreen", True)
+        frame = tk.Frame(win, bg="#000000")
+        frame.pack(fill="both", expand=True)
+        win.update_idletasks()
+        win.bind("<Escape>", lambda e: self._exit_fullscreen())
+        win.protocol("WM_DELETE_WINDOW", self._exit_fullscreen)
+        try:
+            fsp = self._new_mpv(m, frame, fullscreen=True)
+            fsp.loop_file = "inf" if self.loop_var.get() else "no"
+            fsp.play(self.player_item["path"])
+            fsp.pause = paused
+        except Exception as e:  # noqa: BLE001
+            win.destroy()
+            messagebox.showerror("Player", f"Não foi possível abrir a tela cheia.\n\n{e}")
+            return
+        self.player_fs = win
+        self.player_fs_player = fsp
+        self._pending_seek = pos
+
+    def _exit_fullscreen(self):
+        if self.player_fs is None:
+            return
+        fsp = self.player_fs_player
+        try:
+            pos = fsp.time_pos or 0
+            paused = bool(fsp.pause)
+        except Exception:  # noqa: BLE001
+            pos, paused = 0, False
+        try:
+            fsp.terminate()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self.player_fs.destroy()
+        except Exception:  # noqa: BLE001
+            pass
+        self.player_fs = None
+        self.player_fs_player = None
+        if self.player is not None:
+            try:
+                self.player.seek(pos, reference="absolute")
+                self.player.pause = paused
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _player_close(self):
+        try:
+            if self.player_fs is not None:
+                self._exit_fullscreen()
+        except Exception:  # noqa: BLE001
+            pass
+        if self.player is not None:
+            try:
+                self.player.terminate()
+            except Exception:  # noqa: BLE001
+                pass
+            self.player = None
 
     # ---------- Aba Histórico ----------
     def _build_history_tab(self, tab):
@@ -2047,6 +2623,10 @@ class App(ctk.CTk):
         self._render_history()
 
     def _render_history(self):
+        self._render_player_list()
+        self._render_history_items()
+
+    def _render_history_items(self):
         for w in self._hist_widgets:
             try:
                 w.destroy()
@@ -2114,7 +2694,7 @@ class App(ctk.CTk):
                      hover_color=CARD_2_HOVER, text_color=TEXT, font=ctk.CTkFont(size=12))
         ctk.CTkButton(right, text="Qualidade", command=lambda e=h: self.hist_pick_quality(e),
                       **small).grid(row=1, column=0, padx=(0, 3), pady=(0, 4))
-        ctk.CTkButton(right, text="Abrir", command=lambda e=h: self.hist_open(e),
+        ctk.CTkButton(right, text="▶ Assistir", command=lambda e=h: self.play_entry(e),
                       **small).grid(row=1, column=1, padx=(3, 0), pady=(0, 4))
         ctk.CTkButton(right, text="Pasta", command=lambda e=h: self.hist_folder(e),
                       **small).grid(row=2, column=0, padx=(0, 3))
@@ -2741,6 +3321,8 @@ class App(ctk.CTk):
                 elif kind == "suggest_fail":
                     self._probing = False
                     self._suggested[ev[1]] = time.time()
+                elif kind == "player_exit_fs":
+                    self._exit_fullscreen()
                 elif kind == "tray":
                     if ev[1] == "show":
                         self._show_window()

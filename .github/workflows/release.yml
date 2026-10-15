@@ -41,6 +41,7 @@ jobs:
           --name BaixadorDeVideos
           --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all customtkinter
           --collect-all imageio_ffmpeg --collect-all pystray
+          --hidden-import mpv --collect-all py7zr
           --icon icone.ico app.py
 
       - name: Incluir o Deno (exigido pelo YouTube)
@@ -49,6 +50,21 @@ jobs:
           Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile deno.zip
           Expand-Archive deno.zip -DestinationPath deno -Force
           Copy-Item deno\deno.exe dist\BaixadorDeVideos\
+
+      - name: Incluir o player de vídeo (libmpv)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $rel = Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:GH_TOKEN"; "User-Agent" = "ci" } -Uri "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
+          $asset = $rel.assets | Where-Object { $_.name -like "mpv-dev-x86_64-*.7z" -and $_.name -notlike "*-v3-*" } | Select-Object -First 1
+          if (-not $asset) { throw "libmpv nao encontrado" }
+          Invoke-WebRequest -UseBasicParsing -Uri $asset.browser_download_url -OutFile mpv.7z
+          7z x mpv.7z -ompv -y | Out-Null
+          $dll = Get-ChildItem -Recurse mpv -Include libmpv-2.dll, mpv-2.dll | Select-Object -First 1
+          if (-not $dll) { throw "libmpv-2.dll nao encontrado no pacote" }
+          Copy-Item $dll.FullName dist\BaixadorDeVideos\
+          Get-Item "dist\BaixadorDeVideos\$($dll.Name)"
 
       - name: Instalar o Inno Setup
         shell: pwsh

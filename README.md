@@ -36,7 +36,8 @@ Requisitos: Windows 10 ou 11 (64 bits).
 - **Sugestão enquanto você assiste:** com a extensão do navegador, o programa avisa quando um vídeo está tocando e oferece o download.
 - **Vídeos com restrição de idade:** usa o login do navegador ou um arquivo `cookies.txt`.
 - **Tema claro, escuro ou do sistema**, e opção de minimizar para a bandeja do sistema.
-- **Dois estilos visuais:** Clássico (padrão) ou Cyberpunk, em amarelo, vermelho e cinza. Troque na aba ⚙.
+- **Player embutido:** assista aos vídeos baixados na aba ▶ Player, com tela cheia, velocidade, repetir e próximo/anterior.
+- **Três estilos visuais:** Clássico (padrão), Cyberpunk (amarelo, vermelho e cinza) e Retrô minimalista (creme, laranja e verde-petróleo). Troque na aba ⚙.
 - **Tudo pronto:** FFmpeg e Deno já vêm no instalador.
 
 <p align="center">
@@ -46,7 +47,7 @@ Requisitos: Windows 10 ou 11 (64 bits).
 ## Android (beta)
 
 O app para celular tem os mesmos recursos: download por link com escolha de qualidade ou MP3, pesquisa,
-histórico, estilos Clássico e Cyberpunk e tema claro, escuro ou do sistema.
+histórico, player embutido, estilos Clássico, Cyberpunk e Retrô e tema claro, escuro ou do sistema.
 
 - **Instalar:** baixe o APK **arm64** na [página da versão Android](../../releases/tag/android-v1.2.0),
   toque nele e permita instalar apps dessa fonte quando o Android pedir.

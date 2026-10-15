@@ -12,7 +12,9 @@ const ACTIVE = ["starting", "downloading", "processing", "saving"];
 const BAR_COLORS = {
   "classico-dark": "#0f1115", "classico-light": "#f3f4f9",
   "cyberpunk-dark": "#101013", "cyberpunk-light": "#e7e8eb",
+  "retro-dark": "#1f1c19", "retro-light": "#f2ead8",
 };
+const STYLES = ["classico", "cyberpunk", "retro"];
 const DEFAULTS = { theme: "dark", style: "classico", notify: true, clipboard: true, autoUpdate: true,
   ignoredHosts: [], lastClip: "" };
 
@@ -31,6 +33,7 @@ const S = {
   searchReq: "",
   probeReq: "",
   suggestion: null,
+  playing: null,        // item do histórico tocando no player
 };
 
 /* ---------- ponte nativa (com simulação para testar no navegador) ---------- */
@@ -87,6 +90,8 @@ function makeMock() {
     updateYtdlp: () => { log("updateYtdlp"); emit("update", { state: "running", text: "Atualizando o yt-dlp..." }, 10);
       emit("update", { state: "done", text: "O yt-dlp já está na versão mais recente.", version: "2026.10.01" }, 600); },
     readClipboard: () => window.__clip || "",
+    mediaUrl: (u, m) => { log("mediaUrl", u); return window.__testVideo || ""; },
+    keepScreenOn: (on) => log("keepScreenOn", on),
     setBars: (c, l) => log("setBars", [c, l]),
     toast: (m) => log("toast", m),
     __setHistory: (h) => { hist = h; },
@@ -208,7 +213,7 @@ function currentMode() {
 }
 
 function applyLook() {
-  const style = S.settings.style === "cyberpunk" ? "cyberpunk" : "classico";
+  const style = STYLES.includes(S.settings.style) ? S.settings.style : "classico";
   const mode = currentMode();
   document.body.dataset.style = style;
   document.body.dataset.mode = mode;
@@ -230,6 +235,7 @@ function showTab(name) {
   $$(".nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
   window.scrollTo(0, 0);
   if (name === "historico") N.getHistory();
+  if (name === "player") renderPlayerList();
 }
 $$(".nav button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
@@ -354,6 +360,7 @@ function onDone(d) {
   toast("Download concluído!");
   S.history = [e].concat(S.history.filter((h) => h.id !== e.id));
   if (S.tab === "historico") renderHistory();
+  if (S.tab === "player") renderPlayerList();
 }
 
 $("#btn-analyze").addEventListener("click", () => analyze());
@@ -371,7 +378,7 @@ $("#btn-download").addEventListener("click", () => {
 });
 $("#btn-cancel").addEventListener("click", () => N.cancel());
 $("#btn-folder").addEventListener("click", () => N.openDownloads());
-$("#btn-open-last").addEventListener("click", () => { if (S.lastDone) N.openFile(S.lastDone.uri, S.lastDone.mime || ""); });
+$("#btn-open-last").addEventListener("click", () => { if (S.lastDone) playEntry(S.lastDone); });
 $("#btn-share-last").addEventListener("click", () => { if (S.lastDone) N.shareFile(S.lastDone.uri, S.lastDone.mime || ""); });
 
 /* ---------- sugestão (link copiado) ---------- */
@@ -512,7 +519,7 @@ function renderHistory() {
       (h.exists ? "✔ Arquivo no celular" : "Arquivo não encontrado (movido ou apagado)") + "</div></div>" +
       '<div class="b full"><button class="btn pri sm grow" data-a="again">↻ Baixar de novo</button>' +
       '<button class="btn sm" data-a="pick">Qualidade</button>' +
-      '<button class="btn sm" data-a="open">Abrir</button>' +
+      '<button class="btn sm" data-a="open">▶ Assistir</button>' +
       '<button class="btn sm link-danger" data-a="del">Remover</button></div>';
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
@@ -527,7 +534,7 @@ function renderHistory() {
         modal("Arquivo não encontrado", "Esse arquivo foi movido ou apagado. Use \"Baixar de novo\" para baixá-lo outra vez.");
         return;
       }
-      N.openFile(h.uri, h.mime || "");
+      playEntry(h);
     });
     el.querySelector('[data-a="del"]').addEventListener("click", () => {
       N.removeHistory(h.id);
@@ -555,6 +562,151 @@ $("#btn-hist-clear").addEventListener("click", () => {
   confirmBox("Limpar histórico", "Apagar todo o histórico de downloads?\n\nOs arquivos baixados continuam no celular.",
     "Limpar", () => { N.clearHistory(); S.history = []; renderHistory(); });
 });
+
+
+/* ---------- ABA PLAYER ---------- */
+const video = $("#video");
+
+function fmtClock(t) {
+  if (!isFinite(t) || t < 0) t = 0;
+  t = Math.floor(t);
+  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  const mm = String(m).padStart(2, "0"), ss = String(s).padStart(2, "0");
+  return h ? h + ":" + mm + ":" + ss : mm + ":" + ss;
+}
+
+function playerItems() {
+  const f = ($("#p-filter").value || "").trim().toLowerCase();
+  return S.history.filter((h) => h.exists && h.uri &&
+    (!f || ((h.title || "") + " " + (h.uploader || "")).toLowerCase().includes(f)));
+}
+
+function renderPlayerList() {
+  const box = $("#p-list");
+  if (!S.histLoaded) { box.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Carregando...</p>'; return; }
+  const items = playerItems();
+  if (!items.length) {
+    box.innerHTML = emptyArt($("#p-filter").value.trim() ? "Nenhum vídeo para esse filtro."
+      : "Nenhum vídeo baixado ainda. Os vídeos que você baixar aparecem aqui para assistir.");
+    return;
+  }
+  box.innerHTML = "";
+  items.slice(0, 80).forEach((h) => {
+    const playing = S.playing && S.playing.id === h.id;
+    const el = document.createElement("div");
+    el.className = "res" + (playing ? " playing" : "");
+    el.innerHTML = '<img class="sthumb" alt="">' +
+      '<div class="info"><div class="t">' + esc(h.title) + "</div>" +
+      '<div class="m">' + esc([h.uploader, h.duration, qualityLabel(h.quality, true)].filter(Boolean).join("  •  ")) + "</div>" +
+      '<div class="b"><button class="btn pri sm" data-a="play">' + (playing ? "⏸ Tocando" : "▶ Assistir") + "</button></div></div>";
+    const im = el.querySelector("img");
+    im.onerror = () => placeholderImg(im);
+    im.src = h.thumb || img("placeholder");
+    el.querySelector('[data-a="play"]').addEventListener("click", () => {
+      if (playing) { togglePlay(); return; }
+      playEntry(h);
+    });
+    box.appendChild(el);
+  });
+}
+
+function playEntry(h) {
+  if (!h) return;
+  if (h.exists === false) {
+    modal("Arquivo não encontrado", "Esse arquivo foi movido ou apagado. Use \"Baixar de novo\" para baixá-lo outra vez.");
+    return;
+  }
+  const url = N.mediaUrl(h.uri, h.mime || "");
+  showTab("player");
+  $("#p-error").classList.add("hidden");
+  S.playing = h;
+  $("#p-title").textContent = h.title || h.name || "Vídeo";
+  if (!url) { playerError(); return; }
+  $("#player-empty").classList.add("hidden");
+  video.poster = h.thumb || "";
+  video.src = url;
+  video.loop = $("#p-loop").classList.contains("on");
+  video.playbackRate = parseFloat($("#p-speed").value) || 1;
+  const pr = video.play();
+  if (pr && pr.catch) pr.catch(() => {});
+  renderPlayerList();
+}
+
+function playerError() {
+  const box = $("#p-error");
+  box.textContent = "Este arquivo não pode ser reproduzido no player do app (formato não suportado pelo celular).";
+  const b = document.createElement("button");
+  b.className = "btn pri";
+  b.textContent = "Abrir em outro app";
+  b.addEventListener("click", () => { if (S.playing) N.openFile(S.playing.uri, S.playing.mime || ""); });
+  box.appendChild(document.createElement("br"));
+  box.appendChild(b);
+  box.classList.remove("hidden");
+}
+
+function togglePlay() {
+  if (!video.src) { const it = playerItems(); if (it.length) playEntry(it[0]); return; }
+  if (video.paused || video.ended) { const pr = video.play(); if (pr && pr.catch) pr.catch(() => {}); }
+  else video.pause();
+}
+
+function stepPlayer(delta) {
+  const items = playerItems();
+  if (!items.length) return;
+  const idx = S.playing ? items.findIndex((h) => h.id === S.playing.id) : -1;
+  playEntry(idx < 0 ? items[0] : items[(idx + delta + items.length) % items.length]);
+}
+
+let seeking = false;
+const seekEl = $("#p-seek");
+seekEl.addEventListener("input", () => {
+  seeking = true;
+  if (isFinite(video.duration)) $("#p-cur").textContent = fmtClock(video.duration * seekEl.value / 1000);
+});
+seekEl.addEventListener("change", () => {
+  if (isFinite(video.duration) && video.duration > 0) video.currentTime = video.duration * seekEl.value / 1000;
+  seeking = false;
+});
+video.addEventListener("timeupdate", () => {
+  if (seeking) return;
+  $("#p-cur").textContent = fmtClock(video.currentTime);
+  if (isFinite(video.duration) && video.duration > 0) seekEl.value = Math.round(1000 * video.currentTime / video.duration);
+});
+video.addEventListener("loadedmetadata", () => { $("#p-dur").textContent = fmtClock(video.duration); });
+video.addEventListener("play", () => { $("#p-play").textContent = "⏸"; N.keepScreenOn(true); renderPlayerList(); });
+video.addEventListener("pause", () => { $("#p-play").textContent = "▶"; N.keepScreenOn(false); });
+video.addEventListener("ended", () => { $("#p-play").textContent = "▶"; N.keepScreenOn(false); });
+video.addEventListener("error", () => { if (video.getAttribute("src")) playerError(); });
+video.addEventListener("click", togglePlay);
+
+$("#p-play").addEventListener("click", togglePlay);
+$("#p-back").addEventListener("click", () => { video.currentTime = Math.max(0, video.currentTime - 10); });
+$("#p-fwd").addEventListener("click", () => {
+  if (isFinite(video.duration)) video.currentTime = Math.min(video.duration, video.currentTime + 10);
+});
+$("#p-prev").addEventListener("click", () => stepPlayer(-1));
+$("#p-next").addEventListener("click", () => stepPlayer(1));
+$("#p-mute").addEventListener("click", () => {
+  video.muted = !video.muted;
+  $("#p-mute").textContent = video.muted ? "🔇" : "🔊";
+});
+$("#p-speed").addEventListener("change", (e) => { video.playbackRate = parseFloat(e.target.value) || 1; });
+$("#p-loop").addEventListener("click", () => {
+  const on = !$("#p-loop").classList.contains("on");
+  $("#p-loop").classList.toggle("on", on);
+  video.loop = on;
+});
+$("#p-full").addEventListener("click", () => {
+  if (!video.src) return;
+  video.controls = true;
+  const req = video.requestFullscreen || video.webkitRequestFullscreen;
+  if (req) { const pr = req.call(video); if (pr && pr.catch) pr.catch(() => { video.controls = false; }); }
+});
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) { video.controls = false; applyLook(); }
+});
+let pFilterTimer = null;
+$("#p-filter").addEventListener("input", () => { clearTimeout(pFilterTimer); pFilterTimer = setTimeout(renderPlayerList, 200); });
 
 /* ---------- ABA CONFIGURAÇÕES ---------- */
 $$("#seg-theme button").forEach((b) => b.addEventListener("click", () => {
@@ -627,7 +779,7 @@ const App = {
         if (d.code === "busy") modal("Aguarde", d.msg);
         else errorHelp("Falha no download.\n" + d.msg, d.code);
         break;
-      case "history": S.history = d.items || []; S.histLoaded = true; renderHistory(); break;
+      case "history": S.history = d.items || []; S.histLoaded = true; renderHistory(); renderPlayerList(); break;
       case "cookies":
         setCookies(!!d.loaded);
         if (d.ok) toast(d.msg, 3500); else modal("cookies.txt", d.msg);
@@ -646,12 +798,14 @@ const App = {
         analyze(d.url);
         break;
       case "systemDark": S.systemDark = !!d.dark; applyLook(); break;
+      case "restoreBars": applyLook(); break;
       case "focus": checkClipboard(); break;
       default: break;
     }
   },
   onBack() {
     if (!$("#modal").classList.contains("hidden")) { closeModal(); return true; }
+    if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return true; }
     if (!$("#suggest").classList.contains("hidden")) { hideSuggestion(); return true; }
     if (S.tab !== "baixar") { showTab("baixar"); return true; }
     return false;

@@ -4,3 +4,5 @@ pillow
 imageio-ffmpeg
 pyinstaller
 pystray
+python-mpv
+py7zr

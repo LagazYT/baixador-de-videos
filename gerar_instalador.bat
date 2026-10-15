@@ -25,7 +25,7 @@ echo.
 echo [3/5] Gerando o programa (pasta dist)...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
-python -m PyInstaller --noconfirm --clean --noconsole --onedir --name BaixadorDeVideos --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all pystray --icon icone.ico app.py
+python -m PyInstaller --noconfirm --clean --noconsole --onedir --name BaixadorDeVideos --collect-all yt_dlp --collect-all yt_dlp_ejs --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all pystray --hidden-import mpv --collect-all py7zr --icon icone.ico app.py
 if errorlevel 1 goto :erro
 
 echo.

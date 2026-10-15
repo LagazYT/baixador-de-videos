@@ -8,6 +8,7 @@ import android.content.ActivityNotFoundException
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
@@ -15,6 +16,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.view.WindowInsetsController
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -35,6 +38,8 @@ class MainActivity : Activity() {
     }
 
     private lateinit var web: WebView
+    private var fullView: View? = null
+    private var fullCallback: WebChromeClient.CustomViewCallback? = null
     private var pageReady = false
     private var pendingShared: String? = null
     private var pendingDownload: String? = null
@@ -52,7 +57,27 @@ class MainActivity : Activity() {
         web.settings.textZoom = 100
         web.isVerticalScrollBarEnabled = false
         web.addJavascriptInterface(Bridge(), "Native")
-        web.webChromeClient = WebChromeClient()
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                if (view == null) return
+                if (fullView != null) {
+                    callback?.onCustomViewHidden()
+                    return
+                }
+                fullView = view
+                fullCallback = callback
+                (window.decorView as ViewGroup).addView(view, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                view.setBackgroundColor(Color.BLACK)
+                web.visibility = View.GONE
+                setImmersive(true)
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }
+
+            override fun onHideCustomView() {
+                exitFullscreen()
+            }
+        }
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val u = request?.url?.toString() ?: return true
@@ -108,6 +133,10 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (fullView != null) {
+            exitFullscreen()
+            return
+        }
         if (!pageReady) {
             @Suppress("DEPRECATION")
             super.onBackPressed()
@@ -116,6 +145,31 @@ class MainActivity : Activity() {
         web.evaluateJavascript("(window.App && App.onBack) ? App.onBack() : false") { r ->
             if (r != "true") moveTaskToBack(true)
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun setImmersive(on: Boolean) {
+        window.decorView.systemUiVisibility = if (on) {
+            View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        } else {
+            0
+        }
+    }
+
+    private fun exitFullscreen() {
+        val v = fullView ?: return
+        (window.decorView as ViewGroup).removeView(v)
+        fullView = null
+        web.visibility = View.VISIBLE
+        setImmersive(false)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        try {
+            fullCallback?.onCustomViewHidden()
+        } catch (e: Exception) {
+        }
+        fullCallback = null
+        send("restoreBars", JSONObject())
     }
 
     private fun isSystemDark(): Boolean =
@@ -303,6 +357,21 @@ class MainActivity : Activity() {
                 } catch (e: Exception) {
                     toast("Não foi possível compartilhar o arquivo.")
                 }
+            }
+        }
+
+        @JavascriptInterface
+        fun mediaUrl(uri: String, mime: String): String = try {
+            MediaServer.urlFor(this@MainActivity, uri, mime)
+        } catch (e: Exception) {
+            ""
+        }
+
+        @JavascriptInterface
+        fun keepScreenOn(on: Boolean) {
+            runOnUiThread {
+                if (on) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
 
