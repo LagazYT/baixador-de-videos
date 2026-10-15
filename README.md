@@ -11,6 +11,10 @@
   <a href="../../releases/latest"><b>⬇ Baixar o instalador para Windows</b></a>
 </p>
 
+<p align="center">
+  <a href="../../releases/tag/android-v1.2.0"><b>📱 Baixar para Android (beta)</b></a>
+</p>
+
 ---
 
 ## Como instalar
@@ -38,6 +42,19 @@ Requisitos: Windows 10 ou 11 (64 bits).
 <p align="center">
   <img src="docs/screenshot.png" alt="Tela do programa" width="520">
 </p>
+
+## Android (beta)
+
+O app para celular tem os mesmos recursos: download por link com escolha de qualidade ou MP3, pesquisa,
+histórico, estilos Clássico e Cyberpunk e tema claro, escuro ou do sistema.
+
+- **Instalar:** baixe o APK **arm64** na [página da versão Android](../../releases/tag/android-v1.2.0),
+  toque nele e permita instalar apps dessa fonte quando o Android pedir.
+- **Baixar de qualquer app:** no YouTube, TikTok, Instagram ou no navegador, toque em **Compartilhar** e
+  escolha **Baixador de Vídeos**.
+- **Link copiado:** ao copiar o link de um vídeo e abrir o app, ele sugere o download.
+- Os downloads continuam em segundo plano, com o progresso na barra de notificações.
+- Os vídeos ficam em **Download/BaixadorDeVideos**.
 
 ## Extensão do navegador (opcional)
 

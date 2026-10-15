@@ -33,16 +33,15 @@ jobs:
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
         run: |
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             {
               echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
               echo "ANDROID_KEYSTORE_PASSWORD=$KS_PASS"
-              echo "ANDROID_KEY_ALIAS=$KS_ALIAS"
-              echo "ANDROID_KEY_PASSWORD=$KEY_PASS"
+              echo "ANDROID_KEY_ALIAS=baixador"
+              echo "ANDROID_KEY_PASSWORD=$KS_PASS"
             } >> "$GITHUB_ENV"
             echo "Assinando com a chave do projeto."
           else
@@ -98,16 +97,43 @@ jobs:
           git add -A && git commit -qm "log ${{ github.run_number }}"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-logs
 
-      - name: Publicar na página de downloads
-        if: contains(github.event.head_commit.message, '[publicar]')
+      - name: Guardar o APK num ramo (para baixar fora do GitHub)
+        if: success()
+        run: |
+          mkdir -p "$RUNNER_TEMP/apkbranch" && cd "$RUNNER_TEMP/apkbranch"
+          cp "$GITHUB_WORKSPACE"/apks/*-arm64.apk "$GITHUB_WORKSPACE"/apks/*-armv7.apk .
+          git init -q -b apk
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "APK ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" apk
+
+      - name: Publicar na página de downloads (beta)
+        if: success() && contains(github.event.head_commit.message, '[publicar]')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.apks.outputs.version }}
+          tag_name: android-v${{ steps.apks.outputs.version }}
+          name: Baixador de Vídeos para Android ${{ steps.apks.outputs.version }} (beta)
+          prerelease: true
+          make_latest: false
           files: apks/*.apk
-          append_body: true
           body: |
+            ## 📱 Baixador de Vídeos para Android (beta)
 
-            ## 📱 Android
+            Os mesmos recursos da versão para Windows: download por link com escolha de qualidade (ou MP3),
+            pesquisa no YouTube e SoundCloud, histórico com "baixar de novo", estilos Clássico e Cyberpunk,
+            tema claro/escuro/sistema e vídeos com restrição de idade via cookies.txt.
+            Extras do celular: botão **Compartilhar → Baixador de Vídeos** em qualquer app, sugestão ao copiar
+            um link e downloads que continuam em segundo plano.
 
-            Baixe o APK **arm64** (funciona na grande maioria dos celulares). Para celulares muito antigos, use o **armv7**.
-            Na instalação, permita "instalar apps de fontes desconhecidas" quando o Android pedir.
+            ### Qual arquivo baixar?
+            - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).
+            - **armv7**: só para celulares muito antigos.
+            - **x86_64**: emuladores e Chromebooks.
+
+            ### Como instalar
+            1. Baixe o APK no celular e toque nele.
+            2. Se o Android pedir, permita **instalar apps desta fonte**.
+            3. Na primeira abertura o app prepara e atualiza o motor de download (precisa de internet, leva alguns segundos).
+
+            Os vídeos ficam em **Download/BaixadorDeVideos**. Produzido por Lagaz.
