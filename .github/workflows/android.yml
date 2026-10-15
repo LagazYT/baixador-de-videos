@@ -1,0 +1,105 @@
+name: Gerar APK (Android)
+
+# Roda a cada mudança na pasta android/. Para publicar o APK na página de downloads,
+# inclua [publicar] na mensagem do commit.
+on:
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Chave de assinatura
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            {
+              echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+              echo "ANDROID_KEYSTORE_PASSWORD=$KS_PASS"
+              echo "ANDROID_KEY_ALIAS=$KS_ALIAS"
+              echo "ANDROID_KEY_PASSWORD=$KEY_PASS"
+            } >> "$GITHUB_ENV"
+            echo "Assinando com a chave do projeto."
+          else
+            echo "::warning::Sem chave do projeto: o APK sera assinado com uma chave temporaria."
+          fi
+
+      - name: Compilar
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          cd android
+          set -o pipefail
+          gradle assembleRelease --stacktrace --no-daemon 2>&1 | tee build.log
+
+      - name: Preparar os APKs
+        id: apks
+        run: |
+          mkdir -p apks
+          V=$(cat android/VERSION)
+          for f in android/app/build/outputs/apk/release/*.apk; do
+            n=$(basename "$f")
+            case "$n" in
+              *arm64-v8a*) cp "$f" "apks/BaixadorDeVideos-Android-$V-arm64.apk" ;;
+              *armeabi-v7a*) cp "$f" "apks/BaixadorDeVideos-Android-$V-armv7.apk" ;;
+              *x86_64*) cp "$f" "apks/BaixadorDeVideos-Android-$V-x86_64.apk" ;;
+            esac
+          done
+          ls -la apks
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BaixadorDeVideos-Android
+          path: apks/*.apk
+
+      - name: Publicar o log da compilação (ajuda a corrigir erros)
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs" && cd "$RUNNER_TEMP/logs"
+          cp "$GITHUB_WORKSPACE/android/build.log" build.log 2>/dev/null || echo "sem log" > build.log
+          ls -la "$GITHUB_WORKSPACE/apks" > apks.txt 2>/dev/null || true
+          echo "${{ job.status }} run=${{ github.run_number }} sha=${{ github.sha }}" > status.txt
+          git init -q -b ci-logs
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "log ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-logs
+
+      - name: Publicar na página de downloads
+        if: contains(github.event.head_commit.message, '[publicar]')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.apks.outputs.version }}
+          files: apks/*.apk
+          append_body: true
+          body: |
+
+            ## 📱 Android
+
+            Baixe o APK **arm64** (funciona na grande maioria dos celulares). Para celulares muito antigos, use o **armv7**.
+            Na instalação, permita "instalar apps de fontes desconhecidas" quando o Android pedir.
