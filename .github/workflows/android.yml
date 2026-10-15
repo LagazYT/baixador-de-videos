@@ -127,6 +127,7 @@ jobs:
             um link e downloads que continuam em segundo plano.
 
             ### Novidades
+            As opções novas ficam na gaveta **Mais opções** da aba Baixar, que começa fechada: sem mexer nela, o download funciona como antes.
             - **Compatível com editores (MP4 H.264):** o vídeo sai em H.264 + AAC, que abre no CapCut, VN, InShot, Premiere e em qualquer celular. Quando não existe H.264 na qualidade escolhida, o app converte depois do download (no celular isso pode demorar).
             - **Baixar só um trecho:** escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão.
             - **Legendas:** embutidas no vídeo e também como arquivo .srt.

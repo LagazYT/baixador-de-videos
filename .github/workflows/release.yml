@@ -108,7 +108,9 @@ jobs:
 
             ## Novidades da ${{ env.VERSION }}
 
-            - **Compatível com editores (MP4 H.264):** nova opção na aba Baixar. O vídeo sai em H.264 + AAC, que abre no Premiere, Vegas, CapCut, DaVinci e em qualquer celular. Quando o vídeo não tem H.264 na qualidade escolhida (4K no YouTube, por exemplo), o programa converte depois do download.
+            As opções novas ficam na gaveta **Mais opções** da aba Baixar, que começa fechada: sem mexer nela, o download funciona como antes.
+
+            - **Compatível com editores (MP4 H.264):** O vídeo sai em H.264 + AAC, que abre no Premiere, Vegas, CapCut, DaVinci e em qualquer celular. Quando o vídeo não tem H.264 na qualidade escolhida (4K no YouTube, por exemplo), o programa converte depois do download.
             - **Baixar só um trecho:** marque a opção, escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão. Há a opção de corte exato (mais lento).
             - **Legendas:** escolha a legenda do vídeo; ela vem embutida no MP4 e também como arquivo .srt.
             - **Salvar thumbnail:** salva a capa do vídeo em alta resolução (JPG) na pasta de downloads.
