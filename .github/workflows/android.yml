@@ -1,7 +1,7 @@
 name: Gerar APK (Android)
 
 # Roda a cada mudança na pasta android/ (ou neste arquivo). Para publicar o APK na página
-# de downloads, inclua [publicar] na mensagem do commit.
+# de downloads (como pré-lançamento android-v<versão>), inclua [publicar] na mensagem do commit.
 on:
   push:
     branches: [main]

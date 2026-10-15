@@ -1,6 +1,7 @@
 name: Gerar instalador
 
-# Roda quando uma versão é publicada (ex.: tag v1.1.0) ou manualmente pela aba Actions.
+# Roda a cada mudança no app desktop, numa tag v* ou manualmente pela aba Actions.
+# Para publicar o instalador na página de downloads, inclua [publicar] na mensagem do commit.
 on:
   push:
     tags: ["v*"]
