@@ -1749,7 +1749,7 @@ class App(ctk.CTk):
         )
         self.quality_menu.pack(anchor="w", fill="x", pady=(4, 0))
         self.btn_thumb = ctk.CTkButton(
-            side, text="🖼  Salvar thumbnail", height=32, corner_radius=R(10),
+            side, text="Salvar thumbnail", height=32, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
             command=self.save_thumbnail, state="disabled",
         )
@@ -4291,15 +4291,15 @@ class App(ctk.CTk):
                     )
                     self._on_download_done(ev[1])
                 elif kind == "thumb_saved":
-                    self.btn_thumb.configure(state="normal", text="🖼  Salvar thumbnail")
+                    self.btn_thumb.configure(state="normal", text="Salvar thumbnail")
                     w, h = ev[2]
                     self.status_label.configure(
-                        text=f"🖼 Thumbnail salva ({w}×{h}): {os.path.basename(ev[1])}",
+                        text=f"✔ Thumbnail salva ({w}×{h}): {os.path.basename(ev[1])}",
                         text_color=SUCCESS)
                 elif kind == "thumb_error":
                     self.btn_thumb.configure(
                         state="normal" if self.video_info else "disabled",
-                        text="🖼  Salvar thumbnail")
+                        text="Salvar thumbnail")
                     self._show_error("Não foi possível salvar a thumbnail.\n" + ev[1][:300])
                 elif kind == "cancelled":
                     self.set_busy(False)
@@ -4393,7 +4393,7 @@ class App(ctk.CTk):
         self.btn_download.configure(state="normal")
         self.btn_thumb.configure(
             state="normal" if best_thumbnail_url(info) else "disabled",
-            text="🖼  Salvar thumbnail")
+            text="Salvar thumbnail")
 
         # dados para as opções: versões H.264, legendas e duração (trecho)
         self.video_heights = list(heights)
