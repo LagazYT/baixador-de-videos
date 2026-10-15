@@ -18,17 +18,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
+        id: java
         with:
           distribution: temurin
           java-version: "17"
 
       - uses: android-actions/setup-android@v3
+        id: sdk
 
       - uses: gradle/actions/setup-gradle@v4
+        id: gradle
         with:
           gradle-version: "8.11.1"
 
       - name: Chave de assinatura
+        id: key
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -49,6 +53,7 @@ jobs:
           fi
 
       - name: Compilar
+        id: build
         env:
           VERSION_CODE: ${{ github.run_number }}
         run: |
@@ -84,6 +89,12 @@ jobs:
           cp "$GITHUB_WORKSPACE/android/build.log" build.log 2>/dev/null || echo "sem log" > build.log
           ls -la "$GITHUB_WORKSPACE/apks" > apks.txt 2>/dev/null || true
           echo "${{ job.status }} run=${{ github.run_number }} sha=${{ github.sha }}" > status.txt
+          cat > steps.json << 'JSONEOF'
+          ${{ toJSON(steps) }}
+          JSONEOF
+          java -version >> status.txt 2>&1 || true
+          which gradle sdkmanager >> status.txt 2>&1 || true
+          echo "ANDROID_HOME=$ANDROID_HOME" >> status.txt
           git init -q -b ci-logs
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
