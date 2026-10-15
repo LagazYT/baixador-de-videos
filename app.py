@@ -139,8 +139,40 @@ STYLES = {
         SOFT=True,
         FONT="Consolas",  # fonte de "máquina de escrever" que já vem no Windows
     ),
+    "steampunk": dict(
+        BG=("#efe2c4", "#1c140e"),
+        CARD=("#f7ecd2", "#2a1d14"),
+        CARD_2=("#e3d2ad", "#3b2a1e"),
+        CARD_2_HOVER=("#d8c398", "#4a3627"),
+        LINE=("#b5893a", "#9a7230"),
+        ACCENT="#b5893a",
+        ACCENT_HOVER="#9a7230",
+        ON_ACCENT="#1c140e",
+        DANGER="#a8442a",
+        DANGER_HOVER="#8c3620",
+        MUTED=("#6d5a43", "#b39f80"),
+        SUCCESS=("#3f7a6c", "#6fb3a2"),
+        TEXT=("#2a1d14", "#efe2c4"),
+        TEXT_SOFT=("#4a3826", "#dccbaa"),
+        WARN=("#8a5a10", "#e0b04a"),
+        ERROR=("#a8442a", "#e98a6a"),
+        BANNER_BG=("#ecd9a8", "#3a2a12"),
+        BANNER_TEXT=("#5a3a08", "#e0b04a"),
+        REMOVE_HOVER=("#ecc9b8", "#4a2618"),
+        SEG_UNSEL=("#d8c398", "#4a3627"),
+        SEG_UNSEL_HOVER=("#ccb487", "#58412f"),
+        SEG_TEXT=("#2a1d14", "#efe2c4"),
+        ACCENT_TEXT=("#8a5a10", "#d8a64a"),
+        FOOTER_TEXT=("#2a1d14", "#efe2c4"),
+        ENTRY_BORDER=2,
+        CARD_BORDER=2,
+        HUD=False,
+        SHARP=False,
+        SOFT=False,
+        FONT="Georgia",  # fonte serifada clássica que já vem no Windows
+    ),
 }
-STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk", "Retrô": "retro"}
+STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk", "Retrô": "retro", "Steampunk": "steampunk"}
 DEFAULT_STYLE = "classico"
 UI_STYLE = DEFAULT_STYLE
 
@@ -179,7 +211,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.4.0"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.5.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(
@@ -1751,7 +1783,8 @@ class App(ctk.CTk):
             font=ctk.CTkFont(size=12),
             text=("Muda as cores, as formas e as imagens do aplicativo. Clássico é o "
                   "visual principal; Cyberpunk usa amarelo, vermelho e cinza com cantos "
-                  "retos; Retrô é minimalista, em creme, laranja e verde-petróleo. "
+                  "retos; Retrô é minimalista, em creme, laranja e verde-petróleo; "
+                  "Steampunk usa latão, cobre e madeira, com engrenagens. "
                   "O programa reinicia para aplicar."),
         ).pack(anchor="w", padx=16, pady=(0, 10))
         self.style_seg = ctk.CTkSegmentedButton(

@@ -41,7 +41,22 @@ body[data-style="retro"][data-mode="light"] {
   --warn-bg:#f3e1b0; --warn-fg:#5a3f00; --err-bg:#f2d4c8; --err-fg:#7a2410; --nav:#fbf6ea;
   --accent-text:#b04a1c; --footer-text:#2b2724;
 }
+body[data-style="steampunk"][data-mode="dark"] {
+  --bg:#1c140e; --card:#2a1d14; --card2:#3b2a1e; --hover:#4a3627; --line:#9a7230;
+  --accent:#b5893a; --accent2:#9a7230; --on-accent:#1c140e; --danger:#a8442a;
+  --text:#efe2c4; --soft:#dccbaa; --muted:#b39f80; --ok:#6fb3a2; --warn:#e0b04a; --err:#e98a6a;
+  --warn-bg:#3a2a12; --warn-fg:#e0b04a; --err-bg:#4a2618; --err-fg:#f2b49c; --nav:#22180f;
+  --accent-text:#d8a64a; --footer-text:#efe2c4;
+}
+body[data-style="steampunk"][data-mode="light"] {
+  --bg:#efe2c4; --card:#f7ecd2; --card2:#e3d2ad; --hover:#d8c398; --line:#b5893a;
+  --accent:#b5893a; --accent2:#9a7230; --on-accent:#1c140e; --danger:#a8442a;
+  --text:#2a1d14; --soft:#4a3826; --muted:#6d5a43; --ok:#3f7a6c; --warn:#8a5a10; --err:#a8442a;
+  --warn-bg:#ecd9a8; --warn-fg:#5a3a08; --err-bg:#ecc9b8; --err-fg:#6e2410; --nav:#f7ecd2;
+  --accent-text:#8a5a10; --footer-text:#2a1d14;
+}
 body { --r:16px; --r-sm:12px; --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+body[data-style="steampunk"] { --r:12px; --r-sm:10px; --font:Georgia,"Palatino Linotype","Noto Serif",serif; }
 body[data-style="retro"] { --r:6px; --r-sm:6px; --font:"Courier New","Consolas",monospace; }
 body[data-style="cyberpunk"] { --r:2px; --r-sm:2px; --font:"sans-serif-condensed","Roboto Condensed","Bahnschrift","Arial Narrow",sans-serif; }
 
@@ -257,3 +272,51 @@ body[data-style="retro"] .suggest { border-color:var(--accent); }
 #upd-notes { color:var(--soft); background:var(--card2); border-radius:var(--r-sm); padding:10px; margin:8px 0 0; }
 #upd-bar { margin-top:10px; }
 .version-foot { text-align:center; color:var(--muted); font-size:12px; margin:6px 0 4px; }
+
+/* ---------- estilo Steampunk ---------- */
+body[data-style="steampunk"] {
+  background-image: radial-gradient(circle at 50% -10%, rgba(181,137,58,.18), transparent 60%);
+  background-attachment: fixed;
+}
+body[data-style="steampunk"] .card, body[data-style="steampunk"] .res {
+  border:2px solid var(--line);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25), 0 3px 0 rgba(0,0,0,.25);
+  background-image:
+    radial-gradient(circle, #e0b860 0 2px, #7a5822 2.5px 3.5px, transparent 4px),
+    radial-gradient(circle, #e0b860 0 2px, #7a5822 2.5px 3.5px, transparent 4px),
+    radial-gradient(circle, #e0b860 0 2px, #7a5822 2.5px 3.5px, transparent 4px),
+    radial-gradient(circle, #e0b860 0 2px, #7a5822 2.5px 3.5px, transparent 4px);
+  background-size: 10px 10px;
+  background-position: 5px 5px, calc(100% - 5px) 5px, 5px calc(100% - 5px), calc(100% - 5px) calc(100% - 5px);
+  background-repeat: no-repeat;
+}
+body[data-style="steampunk"] h3, body[data-style="steampunk"] .p-title, body[data-style="steampunk"] .video h2 {
+  font-variant: small-caps; letter-spacing:.6px;
+}
+body[data-style="steampunk"] .btn, body[data-style="steampunk"] .pbtn { border:1px solid var(--line); }
+body[data-style="steampunk"] .btn.pri, body[data-style="steampunk"] .pbtn.main, body[data-style="steampunk"] .seg button.on,
+body[data-style="steampunk"] .pbtn.on {
+  background: linear-gradient(180deg, #e2bd6e 0%, #b5893a 55%, #8e6a2a 100%);
+  color:#1c140e; border:1px solid #6e4f1c; box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 2px 0 rgba(0,0,0,.3);
+}
+body[data-style="steampunk"] .btn.danger { background: linear-gradient(180deg, #c8643e, #a8442a 60%, #84321c); border-color:#6a2814; }
+body[data-style="steampunk"] input, body[data-style="steampunk"] select { border:1px solid var(--line); }
+body[data-style="steampunk"] .hero { border:2px solid var(--line); }
+body[data-style="steampunk"] .hero h1 { color:var(--text); text-shadow:0 2px 0 rgba(0,0,0,.35); font-size:21px; }
+body[data-style="steampunk"][data-mode="light"] .hero h1 { text-shadow:0 1px 0 rgba(255,255,255,.6); }
+body[data-style="steampunk"] .hero p { color:var(--soft); text-shadow:none; }
+body[data-style="steampunk"] .hero-tag { display:block; font-size:9px; color:var(--accent-text); letter-spacing:1px; white-space:nowrap; margin-bottom:2px; }
+body[data-style="steampunk"] .hero::before { content:""; position:absolute; inset:0; z-index:1; background:linear-gradient(90deg, var(--card) 0 30%, transparent 62%); opacity:.92; }
+body[data-style="steampunk"] .hero-bg { z-index:0; }
+body[data-style="steampunk"] .hero-text { z-index:2; }
+body[data-style="steampunk"] .hero-text { max-width:50%; padding:18px 14px 22px 16px; }
+body[data-style="steampunk"] .hero p { font-size:11px; }
+body[data-style="steampunk"] .bar { border:1px solid var(--line); }
+body[data-style="steampunk"] .bar > i { background: repeating-linear-gradient(135deg, #b5893a 0 10px, #b0643a 10px 20px); }
+body[data-style="steampunk"] .nav { border-top:2px solid var(--line); }
+body[data-style="steampunk"] .nav button.on { color:var(--accent-text); }
+body[data-style="steampunk"] .seg { border:1px solid var(--line); }
+body[data-style="steampunk"] .switch span { border:1px solid var(--line); }
+body[data-style="steampunk"] .switch input:checked + span { background: linear-gradient(180deg, #e2bd6e, #9a7230); }
+body[data-style="steampunk"] #toast { background:#2a1d14; color:#efe2c4; border:2px solid #b5893a; border-radius:10px; }
+body[data-style="steampunk"] .suggest, body[data-style="steampunk"] .banner.info { border-color:#b5893a; }

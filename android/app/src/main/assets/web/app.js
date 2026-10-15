@@ -13,8 +13,9 @@ const BAR_COLORS = {
   "classico-dark": "#0f1115", "classico-light": "#f3f4f9",
   "cyberpunk-dark": "#101013", "cyberpunk-light": "#e7e8eb",
   "retro-dark": "#1f1c19", "retro-light": "#f2ead8",
+  "steampunk-dark": "#1c140e", "steampunk-light": "#efe2c4",
 };
-const STYLES = ["classico", "cyberpunk", "retro"];
+const STYLES = ["classico", "cyberpunk", "retro", "steampunk"];
 const DEFAULTS = { theme: "dark", style: "classico", notify: true, clipboard: true, autoUpdate: true,
   ignoredHosts: [], lastClip: "", autoCheckApp: true, lastAppCheck: 0, knownAppVersion: "" };
 const APP_CHECK_EVERY = 12 * 3600 * 1000;
