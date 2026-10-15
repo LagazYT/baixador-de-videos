@@ -359,6 +359,18 @@ def ffmpeg_location():
     return None
 
 
+def ensure_ffmpeg_on_path(ffdir):
+    """Coloca a pasta do FFmpeg no PATH do programa. Algumas partes do yt-dlp (como o
+    download de só um trecho) só procuram o FFmpeg no PATH e ignoram o ffmpeg_location."""
+    if not ffdir:
+        return ffdir
+    folder = ffdir if os.path.isdir(ffdir) else os.path.dirname(ffdir)
+    parts = os.environ.get("PATH", "").split(os.pathsep)
+    if not any(os.path.normcase(p) == os.path.normcase(folder) for p in parts if p):
+        os.environ["PATH"] = folder + os.pathsep + os.environ.get("PATH", "")
+    return ffdir
+
+
 MPV_DLL_NAMES = ("libmpv-2.dll", "mpv-2.dll", "mpv-1.dll")
 MPV_RELEASES_API = "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
 VIDEO_EXTS = (".mp4", ".mkv", ".webm", ".mov", ".avi", ".m4v", ".mp3", ".m4a", ".opus",
@@ -1132,6 +1144,61 @@ def download_plans(opts, quality, mode="off"):
     return plans
 
 
+def ffmpeg_exe(ffmpeg):
+    """Caminho do executável a partir do que ffmpeg_location() devolve (pasta ou arquivo)."""
+    if ffmpeg and os.path.isdir(ffmpeg):
+        return os.path.join(ffmpeg, "ffmpeg.exe" if os.name == "nt" else "ffmpeg")
+    return ffmpeg
+
+
+def unique_path(path):
+    base, ext = os.path.splitext(path)
+    n = 2
+    while os.path.exists(path):
+        path = f"{base} ({n}){ext}"
+        n += 1
+    return path
+
+
+def cut_section_file(ffmpeg, src, dest_dir, section):
+    """Corta o trecho de um arquivo já baixado (plano B do "baixar só um trecho")."""
+    stem, ext = os.path.splitext(os.path.basename(src))
+    start = float(section["start"])
+    dur = float(section["end"]) - start
+    common = ["-ss", f"{start:.3f}", "-i", src, "-t", f"{dur:.3f}"]
+    if ext.lower() == ".mp3":
+        args = common + ["-map", "0:a", "-c", "copy"]
+    elif section.get("exact"):
+        ext = ".mp4"  # o corte exato recodifica em H.264 + AAC
+        args = common + ["-map", "0:v?", "-map", "0:a?"] + RECODE_ARGS
+    else:
+        args = common + ["-map", "0:v?", "-map", "0:a?", "-c", "copy"]
+        if ext.lower() in (".mp4", ".m4a", ".mov"):
+            args += ["-movflags", "+faststart"]
+    dest = unique_path(os.path.join(dest_dir, f"{stem} ({section_tag(section)}){ext}"))
+    r = subprocess.run(
+        [ffmpeg_exe(ffmpeg), "-hide_banner", "-loglevel", "error", "-y", *args, dest],
+        capture_output=True, text=True, errors="replace",
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if r.returncode != 0 or not os.path.exists(dest) or os.path.getsize(dest) == 0:
+        try:
+            os.remove(dest)
+        except OSError:
+            pass
+        raise RuntimeError("Não foi possível cortar o trecho: " + (r.stderr or "").strip()[-300:])
+    return dest
+
+
+def first_real_error(attempts):
+    """A primeira falha que explica o problema (as receitas de reserva costumam terminar
+    em "formato indisponível", o que esconde a causa real)."""
+    for m in attempts:
+        if "format is not available" not in m and "Requested format" not in m:
+            return m
+    return attempts[-1] if attempts else ""
+
+
 def is_subtitle_error(msg):
     m = str(msg).lower()
     return "subtitle" in m and ("unable to download" in m or "http error" in m or "429" in m)
@@ -1532,7 +1599,7 @@ class App(ctk.CTk):
         self.minsize(720, 560)
         self.configure(fg_color=BG)
 
-        self.ffmpeg = ffmpeg_location()
+        self.ffmpeg = ensure_ffmpeg_on_path(ffmpeg_location())
         self.js_opts, self.has_js = js_runtime_opts()
         self.events = queue.Queue()
         self.cancel_flag = threading.Event()
@@ -4162,18 +4229,13 @@ class App(ctk.CTk):
             target=self._download_worker, args=(opts, ctx), daemon=True
         ).start()
 
-    def _download_worker(self, opts, ctx):
-        mode = ctx.get("mode", "off")
-        plans = download_plans(opts, ctx.get("quality"), mode)
-        debug_lines = []
-
+    def _try_plans(self, plans, ctx, state, debug_lines):
+        """Tenta as receitas em ordem. Devolve (info, caminho, nota) ou None se falharem."""
         class _YDL(yt_dlp.YoutubeDL):
             def write_debug(self, message, only_once=False):
                 debug_lines.append(str(message))  # guarda a saída do FFmpeg
 
-        last_msg = ""
-        retried_same = mode == "recode"  # não repete uma conversão demorada
-        sub_note = None
+        retried_same = ctx.get("mode") == "recode"  # não repete uma conversão demorada
         i = 0
         while i < len(plans):
             plan, note = plans[i]
@@ -4187,30 +4249,24 @@ class App(ctk.CTk):
                         path = finished[0].get("filepath")
                     if not path:
                         path = ydl.prepare_filename(info)
-                notes = [n for n in (note, sub_note) if n]
-                self.events.put(("done", {
-                    **ctx, "path": path, "height": info.get("height"),
-                    "note": "; ".join(notes),
-                    "compat": bool(ctx.get("compat")) and note is None,
-                    "subs": "" if sub_note else ctx.get("subs", ""),
-                }))
-                return
+                return info, path, note
             except DownloadCancelled:
-                self.events.put(("cancelled",))
-                return
+                raise
             except Exception as e:  # noqa: BLE001
                 if self.cancel_flag.is_set():
-                    self.events.put(("cancelled",))
-                    return
-                last_msg = clean_msg(logger.last_error or str(e))
-                if sub_note is None and ctx.get("subs") and is_subtitle_error(last_msg):
+                    raise DownloadCancelled()
+                msg = clean_msg(logger.last_error or str(e))
+                state["attempts"].append(msg)
+                if not state["subs_dropped"] and ctx.get("subs") and is_subtitle_error(msg):
                     # a legenda falhou (o YouTube às vezes limita): baixa sem ela
-                    sub_note = NOTE_NO_SUBS
+                    state["subs_dropped"] = True
                     plans = [(strip_subs(o), n) for o, n in plans]
                     self.events.put(("status", "Não foi possível baixar a legenda. "
                                                "Baixando o vídeo sem ela..."))
                     continue
-                if is_postprocess_error(last_msg):
+                if plan.get("download_ranges"):
+                    return None  # trecho direto falhou: vai para o plano B (cortar aqui)
+                if is_postprocess_error(msg):
                     if i == 0 and not retried_same:
                         # Falha momentânea (antivírus lendo os arquivos recém-baixados,
                         # por exemplo): espera um pouco e junta de novo. Os arquivos já
@@ -4220,23 +4276,77 @@ class App(ctk.CTk):
                                                    "Tentando de novo em instantes..."))
                         time.sleep(3)
                         if self.cancel_flag.is_set():
-                            self.events.put(("cancelled",))
-                            return
+                            raise DownloadCancelled()
                         continue
                     if i + 1 < len(plans):
                         self.events.put(("status", "A conversão falhou. Tentando outro formato..."))
                         i += 1
                         continue
-                break
-        msg = last_msg
+                return None
+        return None
+
+    def _download_worker(self, opts, ctx):
+        mode = ctx.get("mode", "off")
+        section = ctx.get("section")
+        debug_lines = []
+        state = {"attempts": [], "subs_dropped": False}
+        tmp_dir = None
+        try:
+            res = self._try_plans(download_plans(opts, ctx.get("quality"), mode),
+                                  ctx, state, debug_lines)
+            if res is None and section and self.ffmpeg:
+                # Plano B do trecho: baixa o vídeo inteiro numa pasta temporária e corta
+                # aqui com o FFmpeg (funciona sempre que o download normal funciona).
+                folder = os.path.dirname(opts["outtmpl"])
+                os.makedirs(folder, exist_ok=True)
+                tmp_dir = tempfile.mkdtemp(prefix=".baixador-trecho-", dir=folder)
+                full = {k: v for k, v in opts.items()
+                        if k not in ("download_ranges", "force_keyframes_at_cuts")}
+                full["outtmpl"] = os.path.join(tmp_dir, "%(title).150B [%(id)s].%(ext)s")
+                self.events.put(("indet", False))
+                self.events.put(("status", "Não deu para baixar só o trecho direto. Baixando o "
+                                           "vídeo para cortar o trecho aqui..."))
+                res = self._try_plans(download_plans(full, ctx.get("quality"), mode),
+                                      ctx, state, debug_lines)
+                if res is not None:
+                    info, src, note = res
+                    self.events.put(("pp", "Cortando o trecho...", True))
+                    res = (info, cut_section_file(self.ffmpeg, src, folder, section), note)
+            if res is not None:
+                info, path, note = res
+                sub_note = NOTE_NO_SUBS if state["subs_dropped"] else None
+                notes = [n for n in (note, sub_note) if n]
+                self.events.put(("done", {
+                    **ctx, "path": path, "height": info.get("height"),
+                    "note": "; ".join(notes),
+                    "compat": bool(ctx.get("compat")) and note is None,
+                    "subs": "" if sub_note else ctx.get("subs", ""),
+                }))
+                return
+        except DownloadCancelled:
+            self.events.put(("cancelled",))
+            return
+        except Exception as e:  # noqa: BLE001  (erro ao cortar o trecho, por exemplo)
+            state["attempts"].append(clean_msg(str(e)))
+        finally:
+            if tmp_dir:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
+        attempts = state["attempts"]
+        msg = first_real_error(attempts)
         detail = tail_text(debug_lines) if is_postprocess_error(msg) else ""
-        log_error(ctx.get("url", ""), msg, detail)
+        log_error(ctx.get("url", ""), msg,
+                  "\n".join(f"tentativa {n + 1}: {m[:300]}" for n, m in enumerate(attempts))
+                  + ("\n" + detail if detail else ""))
         if needs_login(msg):
             msg = LOGIN_HELP + "\n\nDetalhe: " + msg[:220]
         elif "format is not available" in msg or "Requested format" in msg:
-            msg += ("\n\nDica: o YouTube precisa do Deno instalado. "
-                    "Abra o Terminal e rode:\nwinget install DenoLand.Deno\n"
-                    "Depois feche e abra o programa de novo.")
+            if not self.has_js:
+                msg += ("\n\nDica: o YouTube precisa do Deno instalado. "
+                        "Abra o Terminal e rode:\nwinget install DenoLand.Deno\n"
+                        "Depois feche e abra o programa de novo.")
+            else:
+                msg += "\n\nDica: tente outra qualidade na lista."
         elif is_postprocess_error(msg):
             msg += ("\n\nO programa tentou vários formatos e a conversão do vídeo falhou "
                     "em todos. Verifique se o antivírus não está bloqueando o FFmpeg e "
@@ -4307,6 +4417,8 @@ class App(ctk.CTk):
                     self._on_cookie_locked(ev[1], ev[2])
                 elif kind == "status":
                     self.status_label.configure(text=ev[1], text_color=MUTED)
+                elif kind == "indet":
+                    self._set_progress_mode(indeterminate=ev[1])
                 elif kind == "pp":
                     self.status_label.configure(text=ev[1], text_color=MUTED)
                     if ev[2] and not getattr(self, "_indet", False):
@@ -4349,7 +4461,7 @@ class App(ctk.CTk):
                     self._show_banner(ev[1])
                 elif kind == "setup_done":
                     self.setting_up = False
-                    self.ffmpeg = ffmpeg_location()
+                    self.ffmpeg = ensure_ffmpeg_on_path(ffmpeg_location())
                     self.js_opts, self.has_js = js_runtime_opts()
                     missing = self._missing_components()
                     if missing:

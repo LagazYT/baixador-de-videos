@@ -673,6 +673,7 @@ object Engine {
         var i = 0
         var retried = j.mode == "recode"  // não repete uma conversão demorada
         var lastMsg = ""
+        val attempts = mutableListOf<String>()
         val tag = j.section?.let { " (" + sectionTag(it) + ")" } ?: ""
         if (j.section != null) {
             // o FFmpeg baixa o trecho sem informar o progresso: a barra fica em movimento
@@ -748,6 +749,7 @@ object Engine {
                     return
                 }
                 lastMsg = cleanMsg(e.message ?: e.toString())
+                attempts.add(lastMsg)
                 if (withSubs && j.subCode.isNotEmpty() && j.section == null && isSubtitleError(lastMsg)) {
                     // a legenda falhou (o YouTube às vezes limita): baixa sem ela
                     withSubs = false
@@ -776,6 +778,8 @@ object Engine {
             }
         }
         dir.deleteRecursively()
+        // as receitas de reserva costumam terminar em "formato indisponível": mostra a causa real
+        lastMsg = attempts.firstOrNull { !isFormatError(it) } ?: lastMsg
         val code = when {
             needsLogin(lastMsg) -> "login"
             isFormatError(lastMsg) -> "format"

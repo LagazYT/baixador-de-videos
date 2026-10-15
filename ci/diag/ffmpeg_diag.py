@@ -10,7 +10,7 @@ import yt_dlp  # noqa: E402
 
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "diag")
 os.makedirs(OUT, exist_ok=True)
-FFDIR = app.ffmpeg_location()
+FFDIR = app.ensure_ffmpeg_on_path(app.ffmpeg_location())  # igual ao programa
 EXE = os.path.join(FFDIR, "ffmpeg.exe") if FFDIR else None
 print("ffmpeg escolhido:", FFDIR, "| yt-dlp:", yt_dlp.version.__version__)
 try:
