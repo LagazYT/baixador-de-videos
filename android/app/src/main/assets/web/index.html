@@ -60,10 +60,14 @@
       <div id="vmeta" class="muted small"></div>
       <label class="lbl" for="quality">Qualidade</label>
       <select id="quality" disabled><option>—</option></select>
-      <button class="btn sm thumb-btn" id="btn-thumb" disabled>🖼 Salvar thumbnail</button>
 
       <div class="opts">
-        <h4>Opções do download</h4>
+        <button class="drawer-head" id="opts-toggle" aria-expanded="false">
+          <span class="arrow">▸</span><span class="dh-text"><b>Mais opções</b>
+          <small id="opts-summary">MP4 para editores, trecho, legendas e thumbnail</small></span>
+        </button>
+        <div id="opts-body" class="hidden">
+        <button class="btn sm thumb-btn" id="btn-thumb" disabled>🖼 Salvar thumbnail</button>
         <label class="switch"><input type="checkbox" id="opt-compat"><span></span>
           Compatível com editores (MP4 H.264)</label>
         <p id="compat-hint" class="muted small hint"></p>
@@ -84,6 +88,7 @@
           <p class="muted small hint">Use minutos:segundos (ex.: 2:15). Sem o corte exato, o vídeo pode
             começar um pouco antes do ponto escolhido (o corte cai no quadro-chave mais próximo).
             O MP3 sempre sai no ponto exato.</p>
+        </div>
         </div>
       </div>
       <div class="row">

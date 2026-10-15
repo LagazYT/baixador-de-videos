@@ -440,6 +440,21 @@ function refreshOptions() {
   }
   $("#subs-hint").textContent = st;
   $("#subs").disabled = !v || !subs.length || trim;
+  updateDrawer();
+}
+
+/* gaveta "Mais opções": fechada por padrão; o título mostra o que está ligado */
+function updateDrawer() {
+  const open = !$("#opts-body").classList.contains("hidden");
+  const active = [];
+  if ($("#opt-compat").checked && $("#quality").value !== "audio") active.push("MP4 H.264");
+  if ($("#opt-trim").checked) active.push("só um trecho");
+  else if ($("#subs").value !== "") active.push("legenda");
+  const head = $("#opts-toggle");
+  head.setAttribute("aria-expanded", open ? "true" : "false");
+  head.classList.toggle("active", active.length > 0);
+  $("#opts-summary").textContent = active.length ? "Ligado: " + active.join(", ")
+    : (open ? "Toque para fechar" : "MP4 para editores, trecho, legendas e thumbnail");
 }
 
 /* trecho escolhido: { section } ou { error } */
@@ -563,6 +578,10 @@ $("#btn-paste").addEventListener("click", () => {
 });
 $("#btn-download").addEventListener("click", downloadFromUi);
 $("#quality").addEventListener("change", refreshOptions);
+$("#opts-toggle").addEventListener("click", () => {
+  $("#opts-body").classList.toggle("hidden");
+  updateDrawer();
+});
 $("#subs").addEventListener("change", refreshOptions);
 $("#opt-compat").addEventListener("change", (e) => { S.settings.compat = e.target.checked; saveSettings(); refreshOptions(); });
 $("#opt-trim").addEventListener("change", (e) => {

@@ -60,6 +60,11 @@ def run():
         a.url_var.set(INFO["webpage_url"])
         thumb = app.arte.make_placeholder(app.THUMB_W * 2, app.THUMB_H * 2)
         a._on_analyzed(INFO, [2160, 1080, 720], thumb, {})
+        scroll(a.compat_switch, 0.0)
+        a.after(600, lambda: (grab(a, f"{style}_0_fechada.png"), a.after(200, step1b)))
+
+    def step1b():
+        a._toggle_opts()  # abre a gaveta "Mais opções"
         a.compat_var.set(True)
         a.quality_var.set("2160p")
         a.sub_var.set("Português (Brasil)")

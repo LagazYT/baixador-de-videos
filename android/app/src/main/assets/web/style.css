@@ -133,7 +133,15 @@ select:disabled { opacity:.6; }
 
 /* opções do download (1.6) */
 .thumb-btn { width:100%; margin-top:10px; }
-.opts { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+.opts { margin-top:14px; padding-top:4px; border-top:1px solid var(--line); }
+.drawer-head { display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:0; padding:10px 2px;
+  color:var(--text); font-family:inherit; font-size:15px; text-align:left; cursor:pointer; }
+.drawer-head .arrow { width:14px; color:var(--muted); transition:transform .2s; display:inline-block; }
+.drawer-head[aria-expanded="true"] .arrow { transform:rotate(90deg); }
+.drawer-head .dh-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.drawer-head small { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.drawer-head.active small { color:var(--accent-text); font-weight:600; }
+#opts-body .thumb-btn { margin-top:4px; }
 .opts h4 { margin:0 0 2px; font-size:14px; }
 .opts .switch { margin-top:12px; }
 .hint { margin:4px 0 0; line-height:1.4; }
@@ -141,8 +149,8 @@ select:disabled { opacity:.6; }
 .trim-row { margin-top:0; }
 .trim-row .lbl { margin-top:10px; }
 .trim-row input { text-align:center; font-variant-numeric:tabular-nums; }
-body[data-style="cyberpunk"] .opts h4, body[data-style="retro"] .opts h4 { text-transform:uppercase; letter-spacing:.5px; font-size:13px; }
-body[data-style="steampunk"] .opts h4 { font-variant:small-caps; letter-spacing:.5px; font-size:15px; }
+body[data-style="cyberpunk"] .drawer-head b, body[data-style="retro"] .drawer-head b { text-transform:uppercase; letter-spacing:.5px; font-size:14px; }
+body[data-style="steampunk"] .drawer-head b { font-variant:small-caps; letter-spacing:.5px; font-size:16px; }
 body[data-style="retro"] .opts, body[data-style="steampunk"] .opts { border-top:2px dashed var(--line); }
 
 .thumb { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:var(--r-sm); background:var(--card2); display:block; }

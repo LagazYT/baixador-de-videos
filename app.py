@@ -1748,33 +1748,43 @@ class App(ctk.CTk):
             state="disabled", command=lambda _v: self._refresh_options(),
         )
         self.quality_menu.pack(anchor="w", fill="x", pady=(4, 0))
+
+        # Gaveta "Mais opções" (fechada: o download funciona como antes)
+        opt_card = self._card(page)
+        opt_card.pack(fill="x", pady=(0, 12))
+        self._opts_open = False
+        self.opts_toggle = ctk.CTkButton(
+            opt_card, text="▸  Mais opções", anchor="w", height=42, corner_radius=R(12),
+            fg_color="transparent", hover_color=CARD_2, text_color=TEXT,
+            font=ctk.CTkFont(size=14, weight="bold"), command=self._toggle_opts,
+        )
+        self.opts_toggle.pack(fill="x", padx=6, pady=6)
+        self.opts_body = ctk.CTkFrame(opt_card, fg_color="transparent")
+        trow0 = ctk.CTkFrame(self.opts_body, fg_color="transparent")
+        trow0.pack(fill="x", padx=16, pady=(2, 12))
         self.btn_thumb = ctk.CTkButton(
-            side, text="Salvar thumbnail", height=32, corner_radius=R(10),
+            trow0, text="Salvar thumbnail", width=160, height=32, corner_radius=R(10),
             fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
             command=self.save_thumbnail, state="disabled",
         )
-        self.btn_thumb.pack(anchor="w", pady=(8, 0))
-
-        # Card de opções do download (H.264, legendas e trecho)
-        opt_card = self._card(page)
-        opt_card.pack(fill="x", pady=(0, 12))
+        self.btn_thumb.pack(side="left")
         ctk.CTkLabel(
-            opt_card, text="Opções do download", anchor="w",
-            font=ctk.CTkFont(size=14, weight="bold"),
-        ).pack(anchor="w", padx=16, pady=(14, 8))
+            trow0, text="Salva a capa do vídeo em JPG, em alta resolução, na pasta escolhida.",
+            anchor="w", text_color=MUTED, font=ctk.CTkFont(size=12),
+        ).pack(side="left", padx=(10, 0))
         self.compat_switch = ctk.CTkSwitch(
-            opt_card, text="Compatível com editores (MP4 H.264)", variable=self.compat_var,
+            self.opts_body, text="Compatível com editores (MP4 H.264)", variable=self.compat_var,
             command=self._on_compat_toggle, progress_color=ACCENT,
             button_color=("#ffffff", "#ececef"),
         )
         self.compat_switch.pack(anchor="w", padx=16)
         self.compat_hint = ctk.CTkLabel(
-            opt_card, text="", anchor="w", justify="left", wraplength=640,
+            self.opts_body, text="", anchor="w", justify="left", wraplength=640,
             text_color=MUTED, font=ctk.CTkFont(size=12),
         )
         self.compat_hint.pack(anchor="w", fill="x", padx=16, pady=(2, 10))
 
-        srow = ctk.CTkFrame(opt_card, fg_color="transparent")
+        srow = ctk.CTkFrame(self.opts_body, fg_color="transparent")
         srow.pack(fill="x", padx=16, pady=(0, 10))
         ctk.CTkLabel(srow, text="Legendas", anchor="w").pack(side="left")
         self.sub_menu = ctk.CTkOptionMenu(
@@ -1792,12 +1802,12 @@ class App(ctk.CTk):
         self.sub_hint.pack(side="left", fill="x", expand=True, padx=(10, 0))
 
         self.trim_check = ctk.CTkCheckBox(
-            opt_card, text="Baixar só um trecho", variable=self.trim_var,
+            self.opts_body, text="Baixar só um trecho", variable=self.trim_var,
             command=self._on_trim_toggle, fg_color=ACCENT, hover_color=ACCENT_HOVER,
             border_color=MUTED, corner_radius=R(6),
         )
         self.trim_check.pack(anchor="w", padx=16, pady=(0, 14))
-        self.trim_box = ctk.CTkFrame(opt_card, fg_color="transparent")
+        self.trim_box = ctk.CTkFrame(self.opts_body, fg_color="transparent")
         trow = ctk.CTkFrame(self.trim_box, fg_color="transparent")
         trow.pack(fill="x")
         entry_kw = dict(width=96, height=34, corner_radius=R(10), border_width=ENTRY_BORDER,
@@ -1949,6 +1959,32 @@ class App(ctk.CTk):
         self.sub_hint.configure(text=sub_text)
         ok = bool(self.video_info) and bool(self._sub_map) and not trim
         self.sub_menu.configure(state="normal" if ok else "disabled")
+        self._update_opts_header()
+
+    def _toggle_opts(self):
+        self._opts_open = not self._opts_open
+        if self._opts_open:
+            self.opts_body.pack(fill="x", pady=(0, 4), after=self.opts_toggle)
+        else:
+            self.opts_body.pack_forget()
+        self._update_opts_header()
+
+    def _update_opts_header(self):
+        """Título da gaveta: mostra as opções ligadas mesmo com ela fechada."""
+        active = []
+        if self.compat_var.get() and self.quality_var.get() != LABEL_AUDIO:
+            active.append("MP4 H.264")
+        if self.trim_var.get():
+            active.append("só um trecho")
+        elif self.sub_var.get() != SUBS_NONE:
+            active.append("legenda")
+        arrow = "▾" if self._opts_open else "▸"
+        text = f"{arrow}  Mais opções"
+        if active:
+            text += "   •   ligado: " + ", ".join(active)
+        elif not self._opts_open:
+            text += "   (MP4 para editores, trecho, legendas e thumbnail)"
+        self.opts_toggle.configure(text=text, text_color=ACCENT_TEXT if active else TEXT)
 
     def _on_compat_toggle(self):
         update_settings(compat_editors=bool(self.compat_var.get()))
