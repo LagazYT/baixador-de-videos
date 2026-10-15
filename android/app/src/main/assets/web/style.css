@@ -249,3 +249,11 @@ body[data-style="retro"] .suggest { border-color:var(--accent); }
 #p-speed { width:auto; height:38px; padding-right:30px; background-position:calc(100% - 16px) 16px,calc(100% - 10px) 16px; }
 #p-filter { margin-top:6px; height:42px; }
 .res.playing { outline:2px solid var(--accent); outline-offset:-2px; }
+
+/* ---------- atualizações ---------- */
+.banner.info { background:var(--card); border:2px solid var(--accent); color:var(--text); display:flex; gap:10px; align-items:center; }
+.banner.info span { flex:1; }
+.banner.info .btn { margin-top:0; }
+#upd-notes { color:var(--soft); background:var(--card2); border-radius:var(--r-sm); padding:10px; margin:8px 0 0; }
+#upd-bar { margin-top:10px; }
+.version-foot { text-align:center; color:var(--muted); font-size:12px; margin:6px 0 4px; }

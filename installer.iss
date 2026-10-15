@@ -4,7 +4,7 @@
 ; ============================================================
 #define MyAppName "Baixador de Vídeos"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.3.0"
+  #define MyAppVersion "1.4.0"
 #endif
 #define MyAppPublisher "Lagaz"
 #define MyAppExeName "BaixadorDeVideos.exe"
@@ -55,6 +55,8 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+; Depois de uma atualização automática (instalação silenciosa), abre o programa de novo
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait skipifnotsilent
 
 [UninstallRun]
 ; Fecha o programa (inclusive se estiver na bandeja) antes de remover os arquivos

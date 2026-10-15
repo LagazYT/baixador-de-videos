@@ -20,6 +20,11 @@
     </div>
   </header>
 
+  <div id="app-update-banner" class="banner info hidden">
+    <span id="app-update-banner-text"></span>
+    <button class="btn pri sm" id="btn-go-update">Atualizar</button>
+  </div>
+
   <div id="setup" class="banner warn hidden"><span class="spin"></span><span id="setup-text"></span></div>
 
   <!-- sugestão (link copiado ou compartilhado) -->
@@ -204,11 +209,29 @@
       <p id="update-msg" class="muted small"></p>
     </div>
 
+    <div class="card" id="card-updates">
+      <h3>Atualizações do aplicativo</h3>
+      <div class="kv"><span>Versão instalada</span><b id="upd-current">...</b></div>
+      <p id="upd-status" class="muted small">Toque em "Buscar atualizações" para verificar.</p>
+      <p id="upd-notes" class="small pre hidden"></p>
+      <div id="upd-bar" class="bar hidden"><i id="upd-progress"></i></div>
+      <div class="row">
+        <button class="btn grow" id="btn-check-update">Buscar atualizações</button>
+      </div>
+      <div class="row hidden" id="upd-actions">
+        <button class="btn pri grow" id="btn-install-update">⬇ Baixar e instalar</button>
+        <button class="btn" id="btn-update-page">Novidades</button>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-autocheck"><span></span>
+        Verificar atualizações automaticamente</label>
+    </div>
+
     <div class="card">
       <h3>Baixador de Vídeos</h3>
       <p class="muted small" id="about">Produzido por Lagaz</p>
       <p class="muted small">Use apenas para conteúdo que você tem direito de baixar e respeite os termos de uso dos sites.</p>
     </div>
+    <p class="version-foot" id="version-foot">Baixador de Vídeos</p>
   </section>
 </main>
 

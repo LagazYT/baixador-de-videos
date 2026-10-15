@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import hashlib
 import tempfile
 import threading
 import time
@@ -178,7 +179,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.3.0"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.4.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(
@@ -401,6 +402,80 @@ def download_mpv(progress=None):
         shutil.copy2(found, os.path.join(TOOLS_DIR, os.path.basename(found)))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+GITHUB_REPO = "LagazYT/baixador-de-videos"
+RELEASES_PAGE = f"https://github.com/{GITHUB_REPO}/releases/latest"
+UPDATE_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+SETUP_ASSET = "BaixadorDeVideos_Setup.exe"
+UPDATE_CHECK_EVERY = 12 * 3600  # segundos
+
+
+def version_tuple(v):
+    nums = re.findall(r"\d+", str(v or ""))
+    return tuple(int(n) for n in nums[:4]) or (0,)
+
+
+def is_newer(remote, local):
+    a, b = list(version_tuple(remote)), list(version_tuple(local))
+    n = max(len(a), len(b))
+    return a + [0] * (n - len(a)) > b + [0] * (n - len(b))
+
+
+def fetch_latest_release():
+    """Consulta a última versão publicada no GitHub. Retorna um dicionário."""
+    req = urllib.request.Request(UPDATE_API, headers={
+        "User-Agent": f"BaixadorDeVideos/{APP_VERSION}", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = json.load(resp)
+    version = str(data.get("tag_name", "")).lstrip("vV")
+    asset = None
+    for a in data.get("assets", []):
+        if a.get("name") == SETUP_ASSET:
+            asset = a
+            break
+    notes = str(data.get("body") or "")
+    marker = notes.find("## Novidades")
+    if marker >= 0:
+        notes = notes[marker:]
+    return {
+        "version": version,
+        "page": data.get("html_url") or RELEASES_PAGE,
+        "notes": notes.strip()[:900],
+        "url": (asset or {}).get("browser_download_url", ""),
+        "size": int((asset or {}).get("size") or 0),
+        "digest": str((asset or {}).get("digest") or ""),
+    }
+
+
+def installed_with_setup():
+    """O programa foi instalado pelo instalador (pode se atualizar sozinho)?"""
+    return getattr(sys, "frozen", False) and os.path.exists(os.path.join(APP_DIR, "unins000.exe"))
+
+
+def download_update(info, progress=None):
+    """Baixa o instalador novo e confere tamanho e SHA-256. Retorna o caminho."""
+    url = info.get("url", "")
+    prefix = f"https://github.com/{GITHUB_REPO}/releases/download/"
+    if not url.startswith(prefix):
+        raise RuntimeError("Endereço de atualização inesperado.")
+    folder = os.path.join(tempfile.gettempdir(), "BaixadorDeVideos-update")
+    os.makedirs(folder, exist_ok=True)
+    dest = os.path.join(folder, f"BaixadorDeVideos_Setup_{info.get('version', 'novo')}.exe")
+    download_file(url, dest, progress)
+    size = os.path.getsize(dest)
+    if info.get("size") and size != info["size"]:
+        raise RuntimeError("O download da atualização veio incompleto. Tente de novo.")
+    digest = info.get("digest", "")
+    if digest.startswith("sha256:"):
+        h = hashlib.sha256()
+        with open(dest, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        if h.hexdigest().lower() != digest.split(":", 1)[1].lower():
+            os.remove(dest)
+            raise RuntimeError("O arquivo baixado não confere com o publicado. Tente de novo.")
+    return dest
 
 
 def fmt_clock(seconds):
@@ -1046,6 +1121,8 @@ class App(ctk.CTk):
         self._last_toast_time = 0.0
         self._suggested = {}
         self._probing = False
+        self.update_info = None
+        self.updating_app = False
         self._mpv_failed = False
         self.player = None
         self.player_fs = None
@@ -1142,6 +1219,7 @@ class App(ctk.CTk):
         self.after(500, self._maybe_setup)
         self.after(800, self._start_bridge)
         self.after(3000, self._refresh_ext_status)
+        self.after(6000, self._auto_check_update)
 
     # ---------- Interface ----------
     def _card(self, parent):
@@ -1360,11 +1438,16 @@ class App(ctk.CTk):
         return missing
 
     def _show_banner(self, text):
+        if hasattr(self, "_update_banner_btn"):
+            self._update_banner_btn.pack_forget()
         self.setup_label.configure(text=text)
         self.setup_banner.pack(fill="x", pady=(0, 10), before=self.tabs)
 
     def _hide_banner_if_ok(self):
         if not self._missing_components() and not self.setting_up:
+            if self.update_info and not self.updating_app:
+                self._show_update_banner(self.update_info["version"])
+                return
             self.setup_banner.pack_forget()
 
     def _maybe_setup(self):
@@ -1769,9 +1852,58 @@ class App(ctk.CTk):
             card3, text="Baixador de Vídeos", font=ctk.CTkFont(size=14, weight="bold")
         ).pack(anchor="w", padx=16, pady=(14, 0))
         ctk.CTkLabel(
-            card3, text=f"Produzido por Lagaz  •  v{APP_VERSION}  •  {ver}", text_color=MUTED,
+            card3, text=f"Produzido por Lagaz  •  {ver}", text_color=MUTED,
             font=ctk.CTkFont(size=12),
         ).pack(anchor="w", padx=16, pady=(0, 14))
+
+        # Atualizações do aplicativo
+        card_up = self._card(page)
+        card_up.pack(fill="x", pady=(0, 12), before=card3)
+        ctk.CTkLabel(
+            card_up, text="Atualizações", font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", padx=16, pady=(16, 2))
+        self.update_status = ctk.CTkLabel(
+            card_up, text=f"Versão instalada: {APP_VERSION}", anchor="w", justify="left",
+            wraplength=620, text_color=MUTED, font=ctk.CTkFont(size=12),
+        )
+        self.update_status.pack(anchor="w", padx=16)
+        self.update_notes = ctk.CTkLabel(
+            card_up, text="", anchor="w", justify="left", wraplength=620,
+            text_color=TEXT_SOFT, font=ctk.CTkFont(size=12),
+        )
+        self.update_progress = ctk.CTkProgressBar(
+            card_up, height=8, corner_radius=R(4), progress_color=ACCENT, fg_color=CARD_2)
+        self.update_progress.set(0)
+        urow = ctk.CTkFrame(card_up, fg_color="transparent")
+        urow.pack(fill="x", padx=16, pady=(10, 4))
+        self.btn_check_update = ctk.CTkButton(
+            urow, text="Buscar atualizações", width=170, height=36, corner_radius=R(10),
+            fg_color=CARD_2, hover_color=CARD_2_HOVER, text_color=TEXT,
+            command=lambda: self.check_update(manual=True),
+        )
+        self.btn_check_update.pack(side="left")
+        self.btn_install_update = ctk.CTkButton(
+            urow, text="⬇ Baixar e instalar", width=170, height=36, corner_radius=R(10),
+            fg_color=ACCENT, hover_color=ACCENT_HOVER, font=ctk.CTkFont(weight="bold"),
+            command=self.install_update,
+        )
+        self.btn_update_page = ctk.CTkButton(
+            urow, text="Ver novidades", width=120, height=36, corner_radius=R(10),
+            fg_color="transparent", hover_color=CARD_2, text_color=ACCENT_TEXT,
+            command=lambda: webbrowser.open((self.update_info or {}).get("page") or RELEASES_PAGE),
+        )
+        self.auto_update_var = ctk.BooleanVar(value=bool(load_settings().get("auto_check_update", True)))
+        ctk.CTkSwitch(
+            card_up, text="Verificar atualizações automaticamente",
+            variable=self.auto_update_var, progress_color=ACCENT, button_color=("#ffffff", "#ececef"),
+            command=lambda: update_settings(auto_check_update=bool(self.auto_update_var.get())),
+        ).pack(anchor="w", padx=16, pady=(6, 16))
+
+        # versão atual no rodapé das configurações
+        ctk.CTkLabel(
+            page, text=f"Baixador de Vídeos  •  versão {APP_VERSION}", bg_color=BG,
+            text_color=MUTED, font=ctk.CTkFont(size=12),
+        ).pack(pady=(4, 12))
 
     def _on_style_change(self, label):
         key = STYLE_LABELS.get(label, DEFAULT_STYLE)
@@ -2079,6 +2211,151 @@ class App(ctk.CTk):
             self.clipboard_clear()
             self.clipboard_append(folder)
             messagebox.showinfo("Copiado", "Caminho copiado:\n" + folder)
+
+    # ---------- Atualizações do aplicativo ----------
+    def _auto_check_update(self):
+        cfg = load_settings()
+        if not cfg.get("auto_check_update", True):
+            return
+        if time.time() - float(cfg.get("last_update_check", 0)) < UPDATE_CHECK_EVERY:
+            # já verificou há pouco: só mostra o aviso se já sabia de uma versão nova
+            known = cfg.get("known_update")
+            if known and is_newer(known, APP_VERSION):
+                self.check_update(manual=False)
+            return
+        self.check_update(manual=False)
+
+    def check_update(self, manual=False):
+        if getattr(self, "_checking_update", False) or self.updating_app:
+            return
+        self._checking_update = True
+        if manual:
+            self.btn_check_update.configure(state="disabled", text="Buscando...")
+            self.update_status.configure(text="Procurando uma versão nova...", text_color=MUTED)
+
+        def work():
+            try:
+                info = fetch_latest_release()
+                self.events.put(("update_checked", info, manual, None))
+            except Exception as e:  # noqa: BLE001
+                self.events.put(("update_checked", None, manual, str(e)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_checked(self, info, manual, error):
+        self._checking_update = False
+        self.btn_check_update.configure(state="normal", text="Buscar atualizações")
+        if error:
+            self.update_status.configure(
+                text=f"Versão instalada: {APP_VERSION}. Não foi possível verificar agora "
+                     "(sem internet?).", text_color=WARN)
+            if manual:
+                messagebox.showwarning("Atualizações", "Não foi possível verificar atualizações agora.\n\n" + error[:200])
+            return
+        update_settings(last_update_check=time.time(), known_update=info["version"])
+        if not is_newer(info["version"], APP_VERSION):
+            self.update_info = None
+            self.btn_install_update.pack_forget()
+            self.btn_update_page.pack_forget()
+            self.update_notes.pack_forget()
+            self.update_status.configure(
+                text=f"Versão instalada: {APP_VERSION}. Você já está na versão mais recente. ✔",
+                text_color=SUCCESS)
+            if manual:
+                messagebox.showinfo("Atualizações", f"Você já está na versão mais recente ({APP_VERSION}).")
+            return
+        self.update_info = info
+        self.update_status.configure(
+            text=f"Versão instalada: {APP_VERSION}.  Nova versão disponível: {info['version']} 🎉",
+            text_color=ACCENT_TEXT)
+        if info.get("notes"):
+            self.update_notes.configure(text=info["notes"].replace("## ", "").replace("**", ""))
+            self.update_notes.pack(anchor="w", padx=16, pady=(6, 0), before=self.btn_check_update.master)
+        self.btn_install_update.configure(
+            text="⬇ Baixar e instalar" if installed_with_setup() else "⬇ Baixar a nova versão")
+        self.btn_install_update.pack(side="left", padx=(8, 0))
+        self.btn_update_page.pack(side="left", padx=(8, 0))
+        self._show_update_banner(info["version"])
+        self._notify("Nova versão disponível", f"Baixador de Vídeos {info['version']}")
+
+    def _show_update_banner(self, version):
+        if self.setting_up:
+            return
+        self.setup_label.configure(
+            text=f"🎉 Nova versão {version} disponível. Veja em ⚙ › Atualizações.")
+        if not hasattr(self, "_update_banner_btn"):
+            self._update_banner_btn = ctk.CTkButton(
+                self.setup_banner, text="Atualizar", width=110, height=32, corner_radius=R(8),
+                fg_color=ACCENT, hover_color=ACCENT_HOVER, command=self._open_update_tab,
+            )
+        self.setup_btn.pack_forget()
+        self._update_banner_btn.pack(side="right", padx=(0, 14))
+        self.setup_banner.pack(fill="x", pady=(0, 10), before=self.tabs)
+
+    def _open_update_tab(self):
+        self._show_window()
+        self.tabs.set("⚙")
+
+    def install_update(self):
+        info = self.update_info
+        if not info:
+            return
+        if not installed_with_setup() or not info.get("url"):
+            # rodando pelo código-fonte ou versão portátil: abre a página de download
+            webbrowser.open(info.get("page") or RELEASES_PAGE)
+            return
+        if self.busy:
+            if not messagebox.askyesno(
+                "Atualizar", "Há um download em andamento. Ele será interrompido. Continuar?"):
+                return
+        if not messagebox.askyesno(
+            "Atualizar",
+            f"Baixar e instalar a versão {info['version']}?\n\nO programa vai fechar durante a "
+            "instalação e abrir de novo sozinho. Seu histórico e suas configurações são mantidos.",
+        ):
+            return
+        self.updating_app = True
+        self.btn_install_update.configure(state="disabled", text="Baixando...")
+        self.btn_check_update.configure(state="disabled")
+        self.update_progress.set(0)
+        self.update_progress.pack(fill="x", padx=16, pady=(8, 0), before=self.btn_check_update.master)
+
+        def progress(done, total):
+            self.events.put(("update_progress", done, total))
+
+        def work():
+            try:
+                path = download_update(info, progress)
+                self.events.put(("update_ready", path, None))
+            except Exception as e:  # noqa: BLE001
+                self.events.put(("update_ready", None, str(e)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_progress(self, done, total):
+        if total:
+            self.update_progress.set(done / total)
+            self.btn_install_update.configure(text=f"Baixando... {int(done * 100 / total)}%")
+
+    def _on_update_ready(self, path, error):
+        if error or not path:
+            self.updating_app = False
+            self.update_progress.pack_forget()
+            self.btn_install_update.configure(state="normal", text="⬇ Baixar e instalar")
+            self.btn_check_update.configure(state="normal")
+            messagebox.showerror("Atualizar", "Não foi possível baixar a atualização.\n\n" + str(error)[:300])
+            return
+        self.btn_install_update.configure(text="Instalando...")
+        try:
+            # /SILENT: mostra só o progresso; o instalador fecha e reabre o programa sozinho
+            subprocess.Popen([path, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"],
+                             close_fds=True)
+        except Exception as e:  # noqa: BLE001
+            self.updating_app = False
+            messagebox.showerror("Atualizar", f"Não foi possível iniciar o instalador.\n\n{e}")
+            return
+        self.busy = False
+        self._quit()
 
     # ---------- Bandeja do sistema ----------
     def _on_close(self):
@@ -3321,6 +3598,12 @@ class App(ctk.CTk):
                 elif kind == "suggest_fail":
                     self._probing = False
                     self._suggested[ev[1]] = time.time()
+                elif kind == "update_checked":
+                    self._on_update_checked(ev[1], ev[2], ev[3])
+                elif kind == "update_progress":
+                    self._on_update_progress(ev[1], ev[2])
+                elif kind == "update_ready":
+                    self._on_update_ready(ev[1], ev[2])
                 elif kind == "player_exit_fs":
                     self._exit_fullscreen()
                 elif kind == "tray":

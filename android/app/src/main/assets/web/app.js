@@ -16,7 +16,8 @@ const BAR_COLORS = {
 };
 const STYLES = ["classico", "cyberpunk", "retro"];
 const DEFAULTS = { theme: "dark", style: "classico", notify: true, clipboard: true, autoUpdate: true,
-  ignoredHosts: [], lastClip: "" };
+  ignoredHosts: [], lastClip: "", autoCheckApp: true, lastAppCheck: 0, knownAppVersion: "" };
+const APP_CHECK_EVERY = 12 * 3600 * 1000;
 
 const S = {
   settings: Object.assign({}, DEFAULTS),
@@ -34,6 +35,8 @@ const S = {
   probeReq: "",
   suggestion: null,
   playing: null,        // item do histórico tocando no player
+  version: "",
+  appUpdate: null,      // informações da versão nova do app
 };
 
 /* ---------- ponte nativa (com simulação para testar no navegador) ---------- */
@@ -92,6 +95,14 @@ function makeMock() {
     readClipboard: () => window.__clip || "",
     mediaUrl: (u, m) => { log("mediaUrl", u); return window.__testVideo || ""; },
     keepScreenOn: (on) => log("keepScreenOn", on),
+    checkAppUpdate: (manual) => { log("checkAppUpdate", manual);
+      const v = window.__remoteVersion || "1.2.0";
+      if (window.__offline) return emit("appUpdate", { state: "error", manual, msg: "Sem conexão." });
+      emit("appUpdate", { state: v > "1.2.0" ? "available" : "latest", manual, info: { version: v, current: "1.2.0",
+        page: "https://github.com/x/releases/tag/android-v" + v, notes: "📱 Novidades\n- Atualizações automáticas", url: "u", size: 1 } }); },
+    downloadAppUpdate: () => { log("downloadAppUpdate"); [10, 55, 100].forEach((p, i) => emit("appUpdateProgress", { pct: p }, 100 + i * 100));
+      emit("appUpdateReady", { version: window.__remoteVersion, sameKey: !window.__otherKey }, 500); },
+    installAppUpdate: () => log("installAppUpdate"),
     setBars: (c, l) => log("setBars", [c, l]),
     toast: (m) => log("toast", m),
     __setHistory: (h) => { hist = h; },
@@ -716,7 +727,7 @@ $$("#seg-style button").forEach((b) => b.addEventListener("click", () => {
   S.settings.style = b.dataset.v; saveSettings(); applyLook();
   if (S.tab === "historico") renderHistory();
 }));
-[["#opt-notify", "notify"], ["#opt-clipboard", "clipboard"], ["#opt-autoupdate", "autoUpdate"]].forEach(([sel, key]) => {
+[["#opt-notify", "notify"], ["#opt-clipboard", "clipboard"], ["#opt-autoupdate", "autoUpdate"], ["#opt-autocheck", "autoCheckApp"]].forEach(([sel, key]) => {
   $(sel).addEventListener("change", (e) => { S.settings[key] = e.target.checked; saveSettings(); });
 });
 $("#btn-ignored").addEventListener("click", () => {
@@ -741,11 +752,16 @@ function fillSettings(state) {
   $("#opt-notify").checked = !!S.settings.notify;
   $("#opt-clipboard").checked = !!S.settings.clipboard;
   $("#opt-autoupdate").checked = !!S.settings.autoUpdate;
+  $("#opt-autocheck").checked = S.settings.autoCheckApp !== false;
   if (state) {
     $("#st-ytdlp").textContent = state.ytdlp || "preparando...";
     $("#st-folder").textContent = state.folder || "Download/BaixadorDeVideos";
-    $("#about").textContent = "Produzido por Lagaz  •  v" + (state.version || "") +
-      (state.ytdlp ? "  •  yt-dlp " + state.ytdlp : "");
+    $("#about").textContent = "Produzido por Lagaz" + (state.ytdlp ? "  •  yt-dlp " + state.ytdlp : "");
+    if (state.version) {
+      S.version = state.version;
+      $("#upd-current").textContent = state.version;
+      $("#version-foot").textContent = "Baixador de Vídeos  •  versão " + state.version;
+    }
     setCookies(!!state.cookies);
   }
 }
@@ -760,6 +776,119 @@ function onSetup(d) {
   $("#setup-text").textContent = d.text;
   box.classList.remove("hidden");
   box.querySelector(".spin").classList.toggle("hidden", d.state !== "running");
+}
+
+
+/* ---------- atualizações do aplicativo ---------- */
+function checkAppUpdate(manual) {
+  if (manual) {
+    busyBtn($("#btn-check-update"), true, "Buscando");
+    $("#upd-status").textContent = "Procurando uma versão nova...";
+    $("#upd-status").className = "muted small";
+  }
+  N.checkAppUpdate(!!manual);
+}
+
+function onAppUpdate(d) {
+  busyBtn($("#btn-check-update"), false);
+  const st = $("#upd-status");
+  if (d.state === "error") {
+    st.textContent = "Não foi possível verificar agora (sem internet?).";
+    st.className = "small warn-text";
+    if (d.manual) toast("Não foi possível verificar atualizações agora.");
+    return;
+  }
+  S.settings.lastAppCheck = Date.now();
+  S.settings.knownAppVersion = d.info.version;
+  saveSettings();
+  if (d.state !== "available") {
+    S.appUpdate = null;
+    $("#upd-actions").classList.add("hidden");
+    $("#upd-notes").classList.add("hidden");
+    $("#app-update-banner").classList.add("hidden");
+    st.textContent = "Você já está na versão mais recente. ✔";
+    st.className = "small exists";
+    if (d.manual) toast("Você já está na versão mais recente (" + (S.version || d.info.current) + ").");
+    return;
+  }
+  S.appUpdate = d.info;
+  st.textContent = "Nova versão disponível: " + d.info.version + " 🎉";
+  st.className = "small";
+  st.style.color = "var(--accent-text)";
+  if (d.info.notes) { $("#upd-notes").textContent = d.info.notes; $("#upd-notes").classList.remove("hidden"); }
+  const btn = $("#btn-install-update");
+  btn.textContent = "⬇ Baixar e instalar";
+  btn.disabled = !d.info.url;
+  $("#upd-actions").classList.remove("hidden");
+  $("#app-update-banner-text").textContent = "🎉 Nova versão " + d.info.version + " do app disponível.";
+  $("#app-update-banner").classList.remove("hidden");
+}
+
+function onAppUpdateProgress(d) {
+  $("#upd-bar").classList.remove("hidden");
+  $("#upd-bar").classList.toggle("indet", d.pct < 0);
+  if (d.pct >= 0) {
+    $("#upd-progress").style.width = d.pct + "%";
+    $("#btn-install-update").textContent = "Baixando... " + d.pct + "%";
+  }
+}
+
+function onAppUpdateReady(d) {
+  $("#upd-bar").classList.add("hidden");
+  const btn = $("#btn-install-update");
+  btn.disabled = false;
+  btn.textContent = "Instalar a versão " + d.version;
+  btn.dataset.ready = "1";
+  if (!d.sameKey) {
+    modal("Atenção antes de instalar",
+      "Esta versão foi assinada com uma chave diferente da versão instalada, então o Android não deixa " +
+      "atualizar por cima.\n\nPara instalar: desinstale o app atual e instale a versão nova pela página de " +
+      "downloads. O histórico e as configurações deste aparelho serão apagados (os vídeos baixados continuam " +
+      "na pasta Download).",
+      [{ label: "Abrir a página de downloads", pri: true, fn: () => N.openUrl(S.appUpdate ? S.appUpdate.page : "") }]);
+    return;
+  }
+  N.installAppUpdate();
+}
+
+function onAppUpdateError(d) {
+  $("#upd-bar").classList.add("hidden");
+  const btn = $("#btn-install-update");
+  btn.disabled = false;
+  btn.textContent = "⬇ Baixar e instalar";
+  delete btn.dataset.ready;
+  modal("Atualização", "Não foi possível atualizar agora.\n\n" + d.msg,
+    [{ label: "Abrir a página de downloads", pri: true, fn: () => N.openUrl(S.appUpdate ? S.appUpdate.page : "") }]);
+}
+
+$("#btn-check-update").addEventListener("click", () => checkAppUpdate(true));
+$("#btn-install-update").addEventListener("click", () => {
+  const btn = $("#btn-install-update");
+  if (btn.dataset.ready === "1") { N.installAppUpdate(); return; }
+  if (!S.appUpdate) return;
+  confirmBox("Atualizar o app",
+    "Baixar e instalar a versão " + S.appUpdate.version + "?\n\nO Android vai mostrar a tela de instalação; " +
+    "toque em Atualizar. Seu histórico e suas configurações são mantidos.",
+    "Baixar e instalar", () => {
+      btn.disabled = true;
+      btn.textContent = "Baixando...";
+      N.downloadAppUpdate();
+    });
+});
+$("#btn-update-page").addEventListener("click", () => N.openUrl(S.appUpdate ? S.appUpdate.page : ""));
+$("#btn-go-update").addEventListener("click", () => {
+  showTab("config");
+  setTimeout(() => $("#card-updates").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+});
+
+function autoCheckAppUpdate() {
+  if (S.settings.autoCheckApp === false) return;
+  if (Date.now() - (S.settings.lastAppCheck || 0) < APP_CHECK_EVERY) {
+    // verificou há pouco: só volta a avisar se já sabia de uma versão nova
+    if (S.settings.knownAppVersion && S.version && S.settings.knownAppVersion !== S.version) checkAppUpdate(false);
+    return;
+  }
+  checkAppUpdate(false);
 }
 
 /* ---------- eventos vindos do app ---------- */
@@ -799,6 +928,13 @@ const App = {
         break;
       case "systemDark": S.systemDark = !!d.dark; applyLook(); break;
       case "restoreBars": applyLook(); break;
+      case "appUpdate": onAppUpdate(d); break;
+      case "appUpdateProgress": onAppUpdateProgress(d); break;
+      case "appUpdateReady": onAppUpdateReady(d); break;
+      case "appUpdateError": onAppUpdateError(d); break;
+      case "appInstallPermission":
+        toast("Permita \"Instalar apps desconhecidos\" para o Baixador de Vídeos e volte ao app.", 5000);
+        break;
       case "focus": checkClipboard(); break;
       default: break;
     }
@@ -829,5 +965,6 @@ window.App = App;
     if (st.job.status === "done") setStatus("✔ " + st.job.text, "ok");
   }
   N.getHistory();
+  setTimeout(autoCheckAppUpdate, 4000);
   if (st.shared) { showTab("baixar"); analyze(st.shared); } else { setTimeout(checkClipboard, 600); }
 })();

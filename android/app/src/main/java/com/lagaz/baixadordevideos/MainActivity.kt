@@ -43,6 +43,7 @@ class MainActivity : Activity() {
     private var pageReady = false
     private var pendingShared: String? = null
     private var pendingDownload: String? = null
+    private var pendingInstall = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,6 +109,24 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         visible = true
+        // voltou da tela de permissão "instalar apps desconhecidos": continua a instalação
+        if (pendingInstall && Updater.canInstall(this)) {
+            pendingInstall = false
+            launchInstaller()
+        }
+    }
+
+    private fun launchInstaller() {
+        val intent = Updater.installIntent(this)
+        if (intent == null) {
+            send("appUpdateError", JSONObject().put("msg", "O arquivo da atualização não foi encontrado. Baixe de novo."))
+            return
+        }
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            send("appUpdateError", JSONObject().put("msg", "Não foi possível abrir o instalador do Android."))
+        }
     }
 
     override fun onPause() {
@@ -372,6 +391,30 @@ class MainActivity : Activity() {
             runOnUiThread {
                 if (on) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+
+        @JavascriptInterface
+        fun checkAppUpdate(manual: Boolean) = Updater.check(manual)
+
+        @JavascriptInterface
+        fun downloadAppUpdate() = Updater.download(this@MainActivity)
+
+        @JavascriptInterface
+        fun installAppUpdate() {
+            runOnUiThread {
+                if (!Updater.canInstall(this@MainActivity)) {
+                    pendingInstall = true
+                    send("appInstallPermission", JSONObject())
+                    try {
+                        startActivity(Updater.permissionIntent(this@MainActivity))
+                    } catch (e: Exception) {
+                        pendingInstall = false
+                        toast("Permita \"Instalar apps desconhecidos\" para o Baixador de Vídeos nas configurações do Android.")
+                    }
+                } else {
+                    launchInstaller()
+                }
             }
         }
 
