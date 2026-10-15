@@ -1,7 +1,7 @@
 name: Gerar APK (Android)
 
-# Roda a cada mudança na pasta android/. Para publicar o APK na página de downloads,
-# inclua [publicar] na mensagem do commit.
+# Roda a cada mudança na pasta android/ (ou neste arquivo). Para publicar o APK na página
+# de downloads, inclua [publicar] na mensagem do commit.
 on:
   push:
     branches: [main]
@@ -121,8 +121,8 @@ jobs:
             ## 📱 Baixador de Vídeos para Android (beta)
 
             Os mesmos recursos da versão para Windows: download por link com escolha de qualidade (ou MP3),
-            pesquisa no YouTube e SoundCloud, histórico com "baixar de novo", estilos Clássico e Cyberpunk,
-            tema claro/escuro/sistema e vídeos com restrição de idade via cookies.txt.
+            pesquisa no YouTube e SoundCloud, histórico com "baixar de novo", **player embutido** (aba ▶ Player),
+            estilos Clássico, Cyberpunk e Retrô, tema claro/escuro/sistema e vídeos com restrição de idade via cookies.txt.
             Extras do celular: botão **Compartilhar → Baixador de Vídeos** em qualquer app, sugestão ao copiar
             um link e downloads que continuam em segundo plano.
 
