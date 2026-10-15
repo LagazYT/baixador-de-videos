@@ -4,6 +4,8 @@ name: Gerar instalador
 on:
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: ["app.py", "arte*.py", "requirements.txt", "installer.iss", "extensao_navegador/**", ".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
@@ -22,12 +24,13 @@ jobs:
       - name: Definir versão
         shell: pwsh
         run: |
-          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") } else { $v = "0.0.0-dev" }
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") } else { $v = (Select-String -Path app.py -Pattern 'APP_VERSION = "([^"]+)"').Matches[0].Groups[1].Value }
           "VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           (Get-Content app.py -Raw -Encoding UTF8) -replace 'APP_VERSION = "[^"]*"', "APP_VERSION = `"$v`"" |
             Set-Content app.py -Encoding UTF8 -NoNewline
 
       - name: Instalar dependências
+        id: deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
@@ -36,6 +39,7 @@ jobs:
         run: python arte.py
 
       - name: Gerar o programa (PyInstaller)
+        id: pyinstaller
         run: >
           python -m PyInstaller --noconfirm --clean --noconsole --onedir
           --name BaixadorDeVideos
@@ -45,6 +49,7 @@ jobs:
           --icon icone.ico app.py
 
       - name: Incluir o Deno (exigido pelo YouTube)
+        id: deno
         shell: pwsh
         run: |
           Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile deno.zip
@@ -52,6 +57,7 @@ jobs:
           Copy-Item deno\deno.exe dist\BaixadorDeVideos\
 
       - name: Incluir o player de vídeo (libmpv)
+        id: libmpv
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,11 +73,13 @@ jobs:
           Get-Item "dist\BaixadorDeVideos\$($dll.Name)"
 
       - name: Instalar o Inno Setup
+        id: inno
         shell: pwsh
         run: |
           if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
 
       - name: Montar o instalador
+        id: installer
         shell: pwsh
         run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$env:VERSION" installer.iss'
 
@@ -87,3 +95,20 @@ jobs:
         with:
           files: installer_output/BaixadorDeVideos_Setup.exe
           generate_release_notes: true
+
+      - name: Publicar o log (diagnóstico)
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs" && cd "$RUNNER_TEMP/logs"
+          echo "${{ job.status }} run=${{ github.run_number }} ref=${{ github.ref }} sha=${{ github.sha }}" > status.txt
+          cat > steps.json << 'JSONEOF'
+          ${{ toJSON(steps) }}
+          JSONEOF
+          ls -la "$GITHUB_WORKSPACE/installer_output" > installer.txt 2>&1 || true
+          ls -la "$GITHUB_WORKSPACE/dist/BaixadorDeVideos" > dist.txt 2>&1 || true
+          git init -q -b ci-logs-desktop
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "log ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-logs-desktop
