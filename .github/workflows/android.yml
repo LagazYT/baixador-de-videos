@@ -126,6 +126,12 @@ jobs:
             Extras do celular: botão **Compartilhar → Baixador de Vídeos** em qualquer app, sugestão ao copiar
             um link e downloads que continuam em segundo plano.
 
+            ### Novidades
+            - O app avisa quando há versão nova e, em ⚙ › Atualizações do aplicativo, baixa e instala a atualização.
+            - A versão atual aparece no rodapé das configurações.
+            - A partir desta versão o APK é assinado com a chave definitiva: as próximas atualizam por cima, mantendo o histórico.
+              Se você tem uma versão beta anterior, desinstale-a uma última vez antes de instalar esta.
+
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).
             - **armv7**: só para celulares muito antigos.

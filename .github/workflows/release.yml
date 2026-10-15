@@ -107,9 +107,11 @@ jobs:
 
             ## Novidades da ${{ env.VERSION }}
 
-            - **Aba ▶ Player:** assista aos vídeos baixados dentro do programa, com tela cheia, barra de tempo, ±10 segundos, volume, velocidade (0.5x a 2x), repetir e anterior/próximo. O player já vem incluído no instalador.
-            - No Histórico, o botão **▶ Assistir** abre o vídeo direto no player.
-            - **Novo estilo Retrô minimalista** (creme, laranja, mostarda e verde-petróleo), além do Clássico e do Cyberpunk. Troque na aba ⚙.
+            - **Atualizações automáticas:** o programa avisa quando sai uma versão nova e, em ⚙ › Atualizações, baixa e instala sozinho (fecha, atualiza e abre de novo). Também há o botão **Buscar atualizações**.
+            - A versão atual aparece no rodapé das configurações.
+            - Continua tudo da 1.3.0: aba ▶ Player e estilos Clássico, Cyberpunk e Retrô.
+
+            > Quem está na 1.3.0 ou anterior instala esta versão manualmente uma vez; a partir dela, as atualizações são automáticas.
 
             📱 A versão para Android (beta) está na [página da versão Android](https://github.com/${{ github.repository }}/releases/tag/android-v${{ env.VERSION }}).
 
