@@ -1,0 +1,35 @@
+{
+  "java": {
+    "outputs": {
+      "distribution": "Temurin-Hotspot",
+      "path": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64",
+      "version": "17.0.20+1"
+    },
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "gradle": {
+    "outputs": {
+      "gradle-version": "8.11.1"
+    },
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "key": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "build": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "apks": {
+    "outputs": {
+      "version": "1.7.1"
+    },
+    "outcome": "success",
+    "conclusion": "success"
+  }
+}

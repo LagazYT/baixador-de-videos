@@ -1,0 +1,6 @@
+total 168264
+drwxr-xr-x  2 runner runner     4096 Oct 16 13:14 .
+drwxr-xr-x 11 runner runner     4096 Oct 16 13:14 ..
+-rw-r--r--  1 runner runner 58649762 Oct 16 13:14 BaixadorDeVideos-Android-1.7.1-arm64.apk
+-rw-r--r--  1 runner runner 51996946 Oct 16 13:14 BaixadorDeVideos-Android-1.7.1-armv7.apk
+-rw-r--r--  1 runner runner 61641540 Oct 16 13:14 BaixadorDeVideos-Android-1.7.1-x86_64.apk
