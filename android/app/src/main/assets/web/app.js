@@ -14,8 +14,12 @@ const BAR_COLORS = {
   "cyberpunk-dark": "#101013", "cyberpunk-light": "#e7e8eb",
   "retro-dark": "#1f1c19", "retro-light": "#f2ead8",
   "steampunk-dark": "#1c140e", "steampunk-light": "#efe2c4",
+  "arcade-dark": "#0b0b1a", "arcade-light": "#f4f1e6",
+  "rpg-dark": "#10151e", "rpg-light": "#f3e9d2",
 };
-const STYLES = ["classico", "cyberpunk", "retro", "steampunk"];
+const STYLES = ["classico", "cyberpunk", "retro", "steampunk", "arcade", "rpg"];
+const STYLE_NAMES = { classico: "Clássico", cyberpunk: "Cyberpunk", retro: "Retrô", steampunk: "Steampunk",
+  arcade: "Arcade 8-bit", rpg: "Fantasia / RPG" };
 const DEFAULTS = { theme: "dark", style: "classico", notify: true, clipboard: true, autoUpdate: true,
   ignoredHosts: [], lastClip: "", autoCheckApp: true, lastAppCheck: 0, knownAppVersion: "", compat: false };
 const ISSUES_URL = "https://github.com/LagazYT/baixador-de-videos/issues/new";
@@ -304,6 +308,7 @@ function applyLook() {
   $$("img.empty-art").forEach((el) => { el.src = img("empty"); });
   $$("#seg-theme button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.settings.theme));
   $$("#seg-style button").forEach((b) => b.classList.toggle("on", b.dataset.v === style));
+  $("#style-summary").textContent = "Atual: " + (STYLE_NAMES[style] || style);
   try { N.setBars(BAR_COLORS[style + "-" + mode], mode === "light"); } catch (e) { /* ignora */ }
 }
 
@@ -953,6 +958,11 @@ $("#p-filter").addEventListener("input", () => { clearTimeout(pFilterTimer); pFi
 $$("#seg-theme button").forEach((b) => b.addEventListener("click", () => {
   S.settings.theme = b.dataset.v; saveSettings(); applyLook();
 }));
+$("#style-toggle").addEventListener("click", () => {
+  const body = $("#style-body");
+  body.classList.toggle("hidden");
+  $("#style-toggle").setAttribute("aria-expanded", body.classList.contains("hidden") ? "false" : "true");
+});
 $$("#seg-style button").forEach((b) => b.addEventListener("click", () => {
   S.settings.style = b.dataset.v; saveSettings(); applyLook();
   if (S.tab === "historico") renderHistory();

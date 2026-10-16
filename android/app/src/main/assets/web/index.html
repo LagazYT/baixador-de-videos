@@ -191,13 +191,21 @@
       </div>
     </div>
 
-    <div class="card">
-      <h3>Estilo visual</h3>
-      <p class="muted small">Muda as cores, as formas e as imagens. Clássico é o visual principal; Cyberpunk usa amarelo,
-        vermelho e cinza com cantos retos; Retrô é minimalista, em creme, laranja e verde-petróleo;
-        Steampunk usa latão, cobre e madeira, com engrenagens.</p>
-      <div class="seg" id="seg-style">
-        <button data-v="classico">Clássico</button><button data-v="cyberpunk">Cyberpunk</button><button data-v="retro">Retrô</button><button data-v="steampunk">Steampunk</button>
+    <div class="card" id="card-style">
+      <button class="drawer-head" id="style-toggle" aria-expanded="false">
+        <span class="arrow">▸</span><span class="dh-text"><b>Estilo visual</b>
+        <small id="style-summary">Atual: Clássico</small></span>
+      </button>
+      <div id="style-body" class="hidden">
+        <p class="muted small">Muda as cores, as formas e as imagens do app. Toque em um estilo para usar.</p>
+        <div class="style-grid" id="seg-style">
+          <button data-v="classico"><i class="sw sw-classico"></i><span>Clássico<small>roxo e rosa</small></span></button>
+          <button data-v="cyberpunk"><i class="sw sw-cyberpunk"></i><span>Cyberpunk<small>amarelo e vermelho</small></span></button>
+          <button data-v="retro"><i class="sw sw-retro"></i><span>Retrô<small>creme e laranja</small></span></button>
+          <button data-v="steampunk"><i class="sw sw-steampunk"></i><span>Steampunk<small>latão e cobre</small></span></button>
+          <button data-v="arcade"><i class="sw sw-arcade"></i><span>Arcade 8-bit<small>pixel art</small></span></button>
+          <button data-v="rpg"><i class="sw sw-rpg"></i><span>Fantasia / RPG<small>castelo e ouro</small></span></button>
+        </div>
       </div>
     </div>
 
@@ -224,9 +232,9 @@
         <b>cookies.txt</b> de um navegador logado no YouTube (extensão "Get cookies.txt LOCALLY"; o mais fácil é no
         computador) e envie o arquivo para o celular. Ele fica só neste aparelho.</p>
       <div class="kv"><span>cookies.txt</span><b id="st-cookies">nenhum</b></div>
-      <div class="row">
-        <button class="btn pri grow" id="btn-cookie">Escolher cookies.txt</button>
-        <button class="btn danger" id="btn-cookie-clear">Remover</button>
+      <div class="col">
+        <button class="btn pri" id="btn-cookie">Escolher cookies.txt</button>
+        <button class="btn danger" id="btn-cookie-clear">Remover cookies.txt</button>
       </div>
     </div>
 
@@ -263,8 +271,8 @@
       <p class="muted small">Se um download falhar, copie o relatório de erro e mande para quem está te
         ajudando, ou abra um relato no GitHub. Ele traz a versão do app, do Android e do yt-dlp e os
         últimos erros.</p>
-      <div class="row">
-        <button class="btn pri grow" id="btn-report">Copiar relatório de erro</button>
+      <div class="col">
+        <button class="btn pri" id="btn-report">Copiar relatório de erro</button>
         <button class="btn" id="btn-issues">Relatar no GitHub</button>
       </div>
     </div>

@@ -4,7 +4,7 @@
 ; ============================================================
 #define MyAppName "Baixador de Vídeos"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.6.1"
+  #define MyAppVersion "1.7.0"
 #endif
 #define MyAppPublisher "Lagaz"
 #define MyAppExeName "BaixadorDeVideos.exe"

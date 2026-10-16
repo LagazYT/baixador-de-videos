@@ -171,22 +171,128 @@ STYLES = {
         SOFT=False,
         FONT="Georgia",  # fonte serifada clássica que já vem no Windows
     ),
+    "arcade": dict(
+        BG=("#f4f1e6", "#0b0b1a"),
+        CARD=("#ffffff", "#14142b"),
+        CARD_2=("#e6e0cc", "#1f1f3d"),
+        CARD_2_HOVER=("#d9d1b8", "#2a2a52"),
+        LINE=("#1a1a2e", "#2de2e6"),
+        ACCENT="#ff3d6e",
+        ACCENT_HOVER="#e0245a",
+        ON_ACCENT="#ffffff",
+        DANGER="#ff8c1a",
+        DANGER_HOVER="#e07410",
+        MUTED=("#5a5670", "#9a9ac8"),
+        SUCCESS=("#1f9e4f", "#4ce67a"),
+        TEXT=("#1a1a2e", "#f0f0ff"),
+        TEXT_SOFT=("#2e2e48", "#d0d0f0"),
+        WARN=("#b07800", "#ffd60a"),
+        ERROR=("#d02050", "#ff6e94"),
+        BANNER_BG=("#fff1c2", "#2a1f00"),
+        BANNER_TEXT=("#6a4a00", "#ffd60a"),
+        REMOVE_HOVER=("#ffd6e0", "#3a1424"),
+        SEG_UNSEL=("#e6e0cc", "#1f1f3d"),
+        SEG_UNSEL_HOVER=("#d9d1b8", "#2a2a52"),
+        SEG_TEXT=("#1a1a2e", "#f0f0ff"),
+        ACCENT_TEXT=("#d02050", "#2de2e6"),
+        FOOTER_TEXT=("#1a1a2e", "#f0f0ff"),
+        ENTRY_BORDER=2,
+        CARD_BORDER=2,
+        HUD=False,
+        SHARP=True,
+        SOFT=False,
+        FONT="VT323",  # fonte de pixels (vem junto com o programa, pasta "fontes")
+        FONT_FILE="VT323-Regular.ttf",
+        FONT_FALLBACK="Consolas",
+        FONT_SCALE=1.35,  # a VT323 é pequena: aumenta todos os textos
+    ),
+    "rpg": dict(
+        BG=("#f3e9d2", "#10151e"),
+        CARD=("#fbf5e6", "#1a212b"),
+        CARD_2=("#ece0c2", "#252e3a"),
+        CARD_2_HOVER=("#e2d3ae", "#2f3a48"),
+        LINE=("#b08d3e", "#8a6d3b"),
+        ACCENT="#a32b2b",
+        ACCENT_HOVER="#871f22",
+        ON_ACCENT="#f6e2a8",
+        DANGER="#5b6472",
+        DANGER_HOVER="#4a525e",
+        MUTED=("#6e5d44", "#a99f8c"),
+        SUCCESS=("#2f7a4f", "#5fc48c"),
+        TEXT=("#2b2117", "#efe6d2"),
+        TEXT_SOFT=("#4a3c2a", "#d8cdb5"),
+        WARN=("#8a5a10", "#e0b04a"),
+        ERROR=("#a32b2b", "#ef8a7a"),
+        BANNER_BG=("#efe0b8", "#2a2412"),
+        BANNER_TEXT=("#5a3a08", "#e0c070"),
+        REMOVE_HOVER=("#f0d0c8", "#3a1c1c"),
+        SEG_UNSEL=("#e2d3ae", "#252e3a"),
+        SEG_UNSEL_HOVER=("#d8c79c", "#2f3a48"),
+        SEG_TEXT=("#2b2117", "#efe6d2"),
+        ACCENT_TEXT=("#8a2020", "#e0c070"),
+        FOOTER_TEXT=("#2b2117", "#e0c070"),
+        ENTRY_BORDER=1,
+        CARD_BORDER=2,
+        HUD=False,
+        SHARP=False,
+        SOFT=True,
+        FONT="Palatino Linotype",  # serifada elegante que já vem no Windows
+    ),
 }
-STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk", "Retrô": "retro", "Steampunk": "steampunk"}
+STYLE_LABELS = {"Clássico": "classico", "Cyberpunk": "cyberpunk", "Retrô": "retro", "Steampunk": "steampunk",
+                "Arcade 8-bit": "arcade", "Fantasia / RPG": "rpg"}
 DEFAULT_STYLE = "classico"
 UI_STYLE = DEFAULT_STYLE
 
 
+STYLE_DEFAULTS = dict(FONT_FILE=None, FONT_FALLBACK=None, FONT_SCALE=1.0)
+
+
+def fonts_dir():
+    """Pasta das fontes que vêm com o programa (dentro do executável ou ao lado do app.py)."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, "fontes")
+
+
+def load_style_font():
+    """Carrega a fonte própria do estilo (só para este programa). Devolve o nome a usar."""
+    if not FONT_FILE:
+        return FONT
+    try:
+        if ctk.FontManager.load_font(os.path.join(fonts_dir(), FONT_FILE)):
+            return FONT
+    except Exception:  # noqa: BLE001
+        pass
+    return FONT_FALLBACK or FONT
+
+
+_BaseCTkFont = ctk.CTkFont
+_THEME_FONT = {}
+
+
+class ScaledFont(_BaseCTkFont):
+    """CTkFont que aumenta o tamanho conforme o estilo (fontes de pixel são menores)."""
+
+    def __init__(self, *args, size=None, **kwargs):
+        if size is not None and FONT_SCALE != 1.0:
+            size = int(round(size * FONT_SCALE))
+        super().__init__(*args, size=size, **kwargs)
+
+
 def apply_style(name):
     """Define as cores/formas globais do estilo escolhido. Chamar antes de criar a janela."""
-    global UI_STYLE
+    global UI_STYLE, FONT
     UI_STYLE = name if name in STYLES else DEFAULT_STYLE
+    globals().update(STYLE_DEFAULTS)
     globals().update(STYLES[UI_STYLE])
     arte.set_style(UI_STYLE)
+    FONT = load_style_font()
+    ctk.CTkFont = ScaledFont if FONT_SCALE != 1.0 else _BaseCTkFont
     try:
         th = ctk.ThemeManager.theme
-        if FONT:
-            th["CTkFont"]["family"] = FONT
+        base = _THEME_FONT.setdefault("base", dict(th["CTkFont"]))  # tamanho/fonte originais
+        th["CTkFont"]["size"] = int(round(base.get("size", 13) * FONT_SCALE))
+        th["CTkFont"]["family"] = FONT or base.get("family")
         th["CTkButton"]["text_color"] = [ON_ACCENT, ON_ACCENT]
         th["CTkButton"]["fg_color"] = [ACCENT, ACCENT]
         th["CTkButton"]["hover_color"] = [ACCENT_HOVER, ACCENT_HOVER]
@@ -211,7 +317,7 @@ apply_style(DEFAULT_STYLE)
 APPEARANCE = {"light": "Light", "dark": "Dark", "system": "System"}
 THEME_LABELS = {"Claro": "light", "Escuro": "dark", "Sistema": "system"}
 
-APP_VERSION = "1.6.1"  # manter igual ao MyAppVersion do installer.iss
+APP_VERSION = "1.7.0"  # manter igual ao MyAppVersion do installer.iss
 THUMB_W, THUMB_H = 320, 180
 
 APP_DIR = os.path.dirname(
@@ -2464,29 +2570,39 @@ class App(ctk.CTk):
         self.theme_seg.set(label)
         self.theme_seg.pack(fill="x", padx=16, pady=(0, 16))
 
-        # Estilo visual (layout e aparência)
+        # Estilo visual: gaveta com os estilos (fechada mostra o estilo atual)
         card_st = self._card(page)
         card_st.pack(fill="x", pady=(0, 12))
-        ctk.CTkLabel(
-            card_st, text="Estilo visual", font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(anchor="w", padx=16, pady=(16, 2))
-        ctk.CTkLabel(
-            card_st, text_color=MUTED, anchor="w", justify="left", wraplength=620,
-            font=ctk.CTkFont(size=12),
-            text=("Muda as cores, as formas e as imagens do aplicativo. Clássico é o "
-                  "visual principal; Cyberpunk usa amarelo, vermelho e cinza com cantos "
-                  "retos; Retrô é minimalista, em creme, laranja e verde-petróleo; "
-                  "Steampunk usa latão, cobre e madeira, com engrenagens. "
-                  "O programa reinicia para aplicar."),
-        ).pack(anchor="w", padx=16, pady=(0, 10))
-        self.style_seg = ctk.CTkSegmentedButton(
-            card_st, values=list(STYLE_LABELS), command=self._on_style_change,
-            height=38, corner_radius=R(10), fg_color=CARD_2, selected_color=ACCENT,
-            selected_hover_color=ACCENT_HOVER, unselected_color=SEG_UNSEL,
-            unselected_hover_color=SEG_UNSEL_HOVER, text_color=SEG_TEXT,
+        self._style_open = False
+        self.style_toggle = ctk.CTkButton(
+            card_st, text="", anchor="w", height=44, corner_radius=R(12),
+            fg_color="transparent", hover_color=CARD_2, text_color=TEXT,
+            font=ctk.CTkFont(size=16, weight="bold"), command=self._toggle_style_drawer,
         )
-        self.style_seg.set(next(k for k, v in STYLE_LABELS.items() if v == UI_STYLE))
-        self.style_seg.pack(fill="x", padx=16, pady=(0, 16))
+        self.style_toggle.pack(fill="x", padx=6, pady=6)
+        self.style_body = ctk.CTkFrame(card_st, fg_color="transparent")
+        ctk.CTkLabel(
+            self.style_body, text_color=MUTED, anchor="w", justify="left", wraplength=620,
+            font=ctk.CTkFont(size=12),
+            text=("Muda as cores, as formas e as imagens do aplicativo. Clássico é o visual "
+                  "principal; Cyberpunk usa amarelo, vermelho e cinza com cantos retos; Retrô "
+                  "é minimalista, em creme, laranja e verde-petróleo; Steampunk usa latão, "
+                  "cobre e madeira; Arcade 8-bit é pixel art de fliperama; Fantasia / RPG tem "
+                  "castelo, ouro e pergaminho. O programa reinicia para aplicar."),
+        ).pack(anchor="w", padx=16, pady=(0, 10))
+        grid = ctk.CTkFrame(self.style_body, fg_color="transparent")
+        grid.pack(fill="x", padx=12, pady=(0, 14))
+        self._style_btns = {}
+        for i, (label, key) in enumerate(STYLE_LABELS.items()):
+            btn = ctk.CTkButton(
+                grid, text=label, height=40, corner_radius=R(10),
+                command=lambda lb=label: self._on_style_change(lb),
+            )
+            btn.grid(row=i // 3, column=i % 3, padx=4, pady=4, sticky="ew")
+            self._style_btns[key] = btn
+        for c in range(3):
+            grid.grid_columnconfigure(c, weight=1, uniform="estilos")
+        self._paint_style_drawer()
 
         # Bandeja do sistema
         card2 = self._card(page)
@@ -2655,24 +2771,43 @@ class App(ctk.CTk):
             text_color=MUTED, font=ctk.CTkFont(size=12),
         ).pack(pady=(4, 12))
 
+    def _toggle_style_drawer(self):
+        self._style_open = not self._style_open
+        if self._style_open:
+            self.style_body.pack(fill="x", after=self.style_toggle)
+        else:
+            self.style_body.pack_forget()
+        self._paint_style_drawer()
+
+    def _paint_style_drawer(self):
+        """Título da gaveta com o estilo atual e destaque no botão do estilo em uso."""
+        current = next(k for k, v in STYLE_LABELS.items() if v == UI_STYLE)
+        arrow = "▾" if self._style_open else "▸"
+        self.style_toggle.configure(text=f"{arrow}  Estilo visual   •   atual: {current}")
+        for key, btn in self._style_btns.items():
+            on = key == UI_STYLE
+            label = next(k for k, v in STYLE_LABELS.items() if v == key)
+            btn.configure(
+                text=("✔ " + label) if on else label,
+                fg_color=ACCENT if on else CARD_2, hover_color=ACCENT_HOVER if on else CARD_2_HOVER,
+                text_color=ON_ACCENT if on else TEXT,
+            )
+
     def _on_style_change(self, label):
         key = STYLE_LABELS.get(label, DEFAULT_STYLE)
         if key == UI_STYLE:
             return
-        current = next(k for k, v in STYLE_LABELS.items() if v == UI_STYLE)
         if self.busy:
             messagebox.showinfo(
                 "Aguarde",
                 "Espere o download atual terminar para trocar o estilo visual.",
             )
-            self.style_seg.set(current)
             return
         if not messagebox.askyesno(
             "Trocar estilo visual",
             f"Mudar para o estilo {label}?\n\nO programa vai reiniciar para aplicar "
             "(leva só alguns segundos).",
         ):
-            self.style_seg.set(current)
             return
         update_settings(ui_style=key)
         self._restart()

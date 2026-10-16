@@ -5,6 +5,8 @@ Arte do Baixador de Vídeos: escolhe entre os estilos visuais do aplicativo.
 - "cyberpunk" -> arte_cyber.py    (amarelo, vermelho e cinza, cantos chanfrados)
 - "retro"     -> arte_retro.py    (creme, laranja, mostarda e verde-petróleo, minimalista)
 - "steampunk" -> arte_steam.py    (latão, cobre e madeira, com engrenagens e manômetro)
+- "arcade"    -> arte_arcade.py   (pixel art de fliperama: estrelas, moedas e corações)
+- "rpg"       -> arte_rpg.py      (fantasia: castelo, selo dourado, escudo e baú)
 
 Rodar `python arte.py` gera o icone.ico, as imagens do instalador e os ícones da
 extensão do navegador (sempre no estilo clássico, que é o visual principal).
@@ -13,8 +15,11 @@ import arte_classico
 import arte_cyber
 import arte_retro
 import arte_steam
+import arte_arcade
+import arte_rpg
 
-STYLES = {"classico": arte_classico, "cyberpunk": arte_cyber, "retro": arte_retro, "steampunk": arte_steam}
+STYLES = {"classico": arte_classico, "cyberpunk": arte_cyber, "retro": arte_retro, "steampunk": arte_steam,
+          "arcade": arte_arcade, "rpg": arte_rpg}
 DEFAULT_STYLE = "classico"
 _current = arte_classico
 

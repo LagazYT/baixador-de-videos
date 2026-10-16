@@ -122,18 +122,15 @@ jobs:
 
             Os mesmos recursos da versão para Windows: download por link com escolha de qualidade (ou MP3),
             pesquisa no YouTube e SoundCloud, histórico com "baixar de novo", **player embutido** (aba ▶ Player),
-            estilos Clássico, Cyberpunk, Retrô e Steampunk, tema claro/escuro/sistema e vídeos com restrição de idade via cookies.txt.
+            estilos Clássico, Cyberpunk, Retrô, Steampunk, Arcade 8-bit e Fantasia / RPG, tema claro/escuro/sistema e vídeos com restrição de idade via cookies.txt.
             Extras do celular: botão **Compartilhar → Baixador de Vídeos** em qualquer app, sugestão ao copiar
             um link e downloads que continuam em segundo plano.
 
             ### Novidades
-            - **1.6.1:** as mensagens de erro mostram a causa real da falha (antes podiam mostrar só "formato indisponível").
-            As opções novas ficam na gaveta **Mais opções** da aba Baixar, que começa fechada: sem mexer nela, o download funciona como antes.
-            - **Compatível com editores (MP4 H.264):** o vídeo sai em H.264 + AAC, que abre no CapCut, VN, InShot, Premiere e em qualquer celular. Quando não existe H.264 na qualidade escolhida, o app converte depois do download (no celular isso pode demorar).
-            - **Baixar só um trecho:** escolha o início e o fim (ex.: 2:15 a 3:40) e baixe só aquela parte, em vídeo ou MP3. O vídeo inteiro continua sendo o padrão.
-            - **Legendas:** embutidas no vídeo e também como arquivo .srt.
-            - **Salvar thumbnail** em alta resolução e **relatório de erro** em ⚙ › Problemas?.
-            - Quem está na 1.4.0 ou 1.5.0 pode atualizar direto pelo app, em ⚙ › Atualizações do aplicativo.
+            - **Dois estilos novos:** **Arcade 8-bit** (pixel art de fliperama) e **Fantasia / RPG** (castelo, ouro e pergaminho), no claro e no escuro.
+            - **Estilo visual em gaveta** em ⚙, com uma prévia das cores de cada estilo.
+            - Corrigido: botões que vazavam para fora da tela em celulares estreitos (como "Relatar no GitHub").
+            - Quem está na 1.4.0 ou mais nova pode atualizar direto pelo app, em ⚙ › Atualizações do aplicativo.
 
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).

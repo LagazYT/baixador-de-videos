@@ -85,11 +85,16 @@ def run():
 
     def step4():
         a.tabs.set("⚙")
-        a.after(400, lambda: (scroll(a.update_status, 1.0), a.after(500, step5)))
+        a._toggle_style_drawer()  # abre a gaveta de estilos
+        a.after(500, lambda: (grab(a, f"{style}_3_estilos.png"), a.after(200, step5)))
 
     def step5():
-        grab(a, f"{style}_3_config.png")
-        a.after(200, a.destroy)
+        scroll(a.update_status, 1.0)
+        a.after(500, lambda: (grab(a, f"{style}_4_config.png"), a.after(200, step6)))
+
+    def step6():
+        a.tabs.set("Histórico")
+        a.after(500, lambda: (grab(a, f"{style}_5_historico.png"), a.after(200, a.destroy)))
 
     a.after(1500, step1)
     a.mainloop()

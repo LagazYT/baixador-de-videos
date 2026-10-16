@@ -1,3 +1,8 @@
+/* fontes que vêm com o app (licença OFL) */
+@font-face { font-family:"VT323"; src:url("fonts/VT323-Regular.ttf") format("truetype"); font-display:swap; }
+@font-face { font-family:"Press Start 2P"; src:url("fonts/PressStart2P-Regular.ttf") format("truetype"); font-display:swap; }
+@font-face { font-family:"Cinzel"; src:url("fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; font-display:swap; }
+
 /* ---------- estilos: Clássico (padrão) e Cyberpunk, cada um em claro e escuro ---------- */
 body[data-style="classico"][data-mode="dark"] {
   --bg:#0f1115; --card:#181b22; --card2:#232833; --hover:#2d3340; --line:#232833;
@@ -55,9 +60,39 @@ body[data-style="steampunk"][data-mode="light"] {
   --warn-bg:#ecd9a8; --warn-fg:#5a3a08; --err-bg:#ecc9b8; --err-fg:#6e2410; --nav:#f7ecd2;
   --accent-text:#8a5a10; --footer-text:#2a1d14;
 }
+body[data-style="arcade"][data-mode="dark"] {
+  --bg:#0b0b1a; --card:#14142b; --card2:#1f1f3d; --hover:#2a2a52; --line:#2de2e6;
+  --accent:#ff3d6e; --accent2:#e0245a; --on-accent:#ffffff; --danger:#ff8c1a;
+  --text:#f0f0ff; --soft:#d0d0f0; --muted:#9a9ac8; --ok:#4ce67a; --warn:#ffd60a; --err:#ff6e94;
+  --warn-bg:#2a2400; --warn-fg:#ffd60a; --err-bg:#3a1424; --err-fg:#ff9cb4; --nav:#10102a;
+  --accent-text:#2de2e6; --footer-text:#f0f0ff; --px-shadow:#000000;
+}
+body[data-style="arcade"][data-mode="light"] {
+  --bg:#f4f1e6; --card:#ffffff; --card2:#e6e0cc; --hover:#d9d1b8; --line:#1a1a2e;
+  --accent:#ff3d6e; --accent2:#e0245a; --on-accent:#ffffff; --danger:#ff8c1a;
+  --text:#1a1a2e; --soft:#2e2e48; --muted:#5a5670; --ok:#1f9e4f; --warn:#b07800; --err:#d02050;
+  --warn-bg:#fff1c2; --warn-fg:#6a4a00; --err-bg:#ffd6e0; --err-fg:#8a1030; --nav:#ffffff;
+  --accent-text:#d02050; --footer-text:#1a1a2e; --px-shadow:#1a1a2e;
+}
+body[data-style="rpg"][data-mode="dark"] {
+  --bg:#10151e; --card:#1a212b; --card2:#252e3a; --hover:#2f3a48; --line:#8a6d3b;
+  --accent:#a32b2b; --accent2:#871f22; --on-accent:#f6e2a8; --danger:#5b6472;
+  --text:#efe6d2; --soft:#d8cdb5; --muted:#a99f8c; --ok:#5fc48c; --warn:#e0b04a; --err:#ef8a7a;
+  --warn-bg:#2a2412; --warn-fg:#e0c070; --err-bg:#3a1c1c; --err-fg:#f2b0a4; --nav:#141a23;
+  --accent-text:#e0c070; --footer-text:#e0c070; --gold:#d2ac50;
+}
+body[data-style="rpg"][data-mode="light"] {
+  --bg:#f3e9d2; --card:#fbf5e6; --card2:#ece0c2; --hover:#e2d3ae; --line:#b08d3e;
+  --accent:#a32b2b; --accent2:#871f22; --on-accent:#f6e2a8; --danger:#5b6472;
+  --text:#2b2117; --soft:#4a3c2a; --muted:#6e5d44; --ok:#2f7a4f; --warn:#8a5a10; --err:#a32b2b;
+  --warn-bg:#efe0b8; --warn-fg:#5a3a08; --err-bg:#f0d0c8; --err-fg:#7a1c1c; --nav:#fbf5e6;
+  --accent-text:#8a2020; --footer-text:#2b2117; --gold:#a8822f;
+}
 body { --r:16px; --r-sm:12px; --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
 body[data-style="steampunk"] { --r:12px; --r-sm:10px; --font:Georgia,"Palatino Linotype","Noto Serif",serif; }
 body[data-style="retro"] { --r:6px; --r-sm:6px; --font:"Courier New","Consolas",monospace; }
+body[data-style="arcade"] { --r:0px; --r-sm:0px; --font:"VT323","Courier New",monospace; }
+body[data-style="rpg"] { --r:6px; --r-sm:6px; --font:"Palatino Linotype","Book Antiqua",Georgia,"Noto Serif",serif; }
 body[data-style="cyberpunk"] { --r:2px; --r-sm:2px; --font:"sans-serif-condensed","Roboto Condensed","Bahnschrift","Arial Narrow",sans-serif; }
 
 /* ---------- base ---------- */
@@ -342,3 +377,126 @@ body[data-style="steampunk"] .switch span { border:1px solid var(--line); }
 body[data-style="steampunk"] .switch input:checked + span { background: linear-gradient(180deg, #e2bd6e, #9a7230); }
 body[data-style="steampunk"] #toast { background:#2a1d14; color:#efe2c4; border:2px solid #b5893a; border-radius:10px; }
 body[data-style="steampunk"] .suggest, body[data-style="steampunk"] .banner.info { border-color:#b5893a; }
+
+/* ---------- gaveta de estilos ---------- */
+#card-style .drawer-head b { font-size:16px; }
+#style-body { margin-top:4px; }
+.style-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+.style-grid button { display:flex; align-items:center; gap:10px; min-width:0; height:58px; padding:0 10px; border:2px solid transparent;
+  border-radius:var(--r-sm); background:var(--card2); color:var(--text); font-family:inherit; font-size:14px; font-weight:600; text-align:left; cursor:pointer; }
+.style-grid button span { display:flex; flex-direction:column; min-width:0; }
+.style-grid button small { font-size:11px; font-weight:400; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.style-grid button.on { border-color:var(--accent); background:var(--hover); }
+.style-grid button.on::after { content:"✔"; margin-left:auto; color:var(--accent-text); }
+.sw { flex:none; width:30px; height:30px; border-radius:8px; border:1px solid rgba(127,127,127,.4); }
+.sw-classico { background:linear-gradient(135deg,#181b22 50%,#7c3aed 50%); }
+.sw-cyberpunk { background:linear-gradient(135deg,#1a1b1f 50%,#f7d61e 50% 75%,#e8263a 75%); border-radius:2px; }
+.sw-retro { background:linear-gradient(135deg,#f2ead8 50%,#d9622b 50% 75%,#2f6f6a 75%); border-radius:4px; }
+.sw-steampunk { background:radial-gradient(circle at 50% 50%,#e2bd6e 0 30%,#9a7230 31% 45%,#2a1d14 46%); }
+.sw-arcade { background:conic-gradient(#ff3d6e 0 25%,#2de2e6 0 50%,#ffd60a 0 75%,#0b0b1a 0); border-radius:0; image-rendering:pixelated; }
+.sw-rpg { background:linear-gradient(135deg,#10151e 50%,#a32b2b 50%); box-shadow:inset 0 0 0 2px #d2ac50; border-radius:6px; }
+
+/* ---------- segurança contra botões vazando da tela ---------- */
+.row { flex-wrap:wrap; }               /* se não couber, o botão desce para a linha de baixo */
+.row.between { flex-wrap:nowrap; }
+.col > .btn { width:100%; }
+
+/* ---------- estilo Arcade 8-bit ---------- */
+body[data-style="arcade"], body[data-style="arcade"] * { font-size-adjust:0.56; }
+body[data-style="arcade"] {
+  background-image: radial-gradient(rgba(45,226,230,.10) 1px, transparent 1.5px);
+  background-size: 14px 14px; background-attachment: fixed;
+}
+body[data-style="arcade"][data-mode="light"] { background-image: radial-gradient(rgba(26,26,46,.10) 1px, transparent 1.5px); }
+body[data-style="arcade"] .card, body[data-style="arcade"] .res {
+  border:3px solid var(--line); box-shadow:5px 5px 0 var(--px-shadow);
+}
+body[data-style="arcade"] h3, body[data-style="arcade"] .video h2, body[data-style="arcade"] .p-title,
+body[data-style="arcade"] .drawer-head b, body[data-style="arcade"] .hero h1 {
+  font-family:"Press Start 2P", monospace; font-size-adjust:none; letter-spacing:0; line-height:1.6;
+}
+body[data-style="arcade"] h3, body[data-style="arcade"] .drawer-head b, body[data-style="arcade"] #card-style .drawer-head b { font-size:12px; }
+body[data-style="arcade"] .video h2 { font-size:12px; }
+body[data-style="arcade"] .btn, body[data-style="arcade"] .pbtn {
+  border:3px solid var(--px-shadow); box-shadow:3px 3px 0 var(--px-shadow); text-transform:uppercase; letter-spacing:0; font-size:15px;
+}
+body[data-style="arcade"][data-mode="dark"] .btn:not(.pri):not(.danger) { border-color:var(--line); }
+body[data-style="arcade"] .btn:active, body[data-style="arcade"] .pbtn:active { transform:translate(3px,3px); box-shadow:none; }
+body[data-style="arcade"] .btn.pri { text-shadow:2px 2px 0 rgba(0,0,0,.35); }
+body[data-style="arcade"] .btn.danger { color:#1a1a2e; }
+body[data-style="arcade"] .btn.ghost, body[data-style="arcade"] .btn.link-danger { border-color:transparent; box-shadow:none; }
+body[data-style="arcade"] input, body[data-style="arcade"] select { border:3px solid var(--line); font-size:18px; }
+body[data-style="arcade"] .bar { height:16px; border:3px solid var(--line); background:var(--card2); }
+body[data-style="arcade"] .bar > i { background:repeating-linear-gradient(90deg, var(--accent) 0 10px, transparent 10px 13px); }
+body[data-style="arcade"] .seg { border:3px solid var(--line); }
+body[data-style="arcade"] .switch span, body[data-style="arcade"] .switch span::after { border-radius:0; }
+body[data-style="arcade"] .switch span { border:2px solid var(--line); }
+body[data-style="arcade"] .switch span::after { top:1px; left:1px; }
+body[data-style="arcade"] .switch input:checked + span::after { left:21px; }
+body[data-style="arcade"] .nav { border-top:3px solid var(--line); }
+body[data-style="arcade"] .nav button { text-transform:uppercase; font-size:15px; }
+body[data-style="arcade"] .nav button.on { color:var(--accent-text); }
+body[data-style="arcade"] .hero { border:3px solid var(--line); box-shadow:5px 5px 0 var(--px-shadow); }
+body[data-style="arcade"] .hero::before { content:""; position:absolute; inset:0; z-index:1;
+  background:linear-gradient(90deg, var(--card) 0 44%, transparent 74%); opacity:.92; }
+body[data-style="arcade"] .hero::after { content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 3px); }
+body[data-style="arcade"] .hero-bg { z-index:0; image-rendering:pixelated; }
+body[data-style="arcade"] .hero-text { z-index:2; max-width:56%; padding:16px 12px 20px 14px; }
+body[data-style="arcade"] .hero-text::before { content:"★ APERTE START ★"; display:block; font-family:"Press Start 2P",monospace;
+  font-size:7px; font-size-adjust:none; color:var(--warn); margin-bottom:8px; white-space:nowrap; }
+body[data-style="arcade"] .hero h1 { font-size:14px; color:var(--text); text-shadow:2px 2px 0 var(--accent2); }
+body[data-style="arcade"] .hero p { color:var(--accent-text); text-shadow:none; font-size:14px; line-height:1.15; }
+body[data-style="arcade"] .thumb, body[data-style="arcade"] .sthumb, body[data-style="arcade"] .empty-art,
+body[data-style="arcade"] .footer img { image-rendering:pixelated; }
+body[data-style="arcade"] #toast { background:var(--card); color:var(--text); border:3px solid var(--line); border-radius:0;
+  box-shadow:4px 4px 0 var(--px-shadow); font-size:17px; }
+body[data-style="arcade"] .suggest, body[data-style="arcade"] .banner { border-width:3px; border-radius:0; }
+body[data-style="arcade"] .drawer-head .arrow { color:var(--accent-text); }
+
+/* ---------- estilo Fantasia / RPG ---------- */
+body[data-style="rpg"] {
+  background-image: radial-gradient(ellipse at 50% -20%, rgba(210,172,80,.16), transparent 60%);
+  background-attachment: fixed;
+}
+body[data-style="rpg"] .card, body[data-style="rpg"] .res {
+  border:1px solid var(--line);
+  box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px color-mix(in srgb, var(--gold) 55%, transparent), 0 3px 10px rgba(0,0,0,.25);
+}
+body[data-style="rpg"] .card::before, body[data-style="rpg"] .card::after {
+  content:""; position:absolute; width:8px; height:8px; top:5px; background:#c43c3c; border:1px solid var(--gold);
+  transform:rotate(45deg); pointer-events:none;
+}
+body[data-style="rpg"] .card::before { left:5px; }
+body[data-style="rpg"] .card::after { right:5px; }
+body[data-style="rpg"] h3, body[data-style="rpg"] .video h2, body[data-style="rpg"] .p-title, body[data-style="rpg"] .drawer-head b,
+body[data-style="rpg"] .hero h1 { font-family:"Cinzel", Georgia, serif; font-weight:700; letter-spacing:.5px; }
+body[data-style="rpg"] h3 { color:var(--accent-text); }
+body[data-style="rpg"] .btn, body[data-style="rpg"] .pbtn { border:1px solid var(--line); }
+body[data-style="rpg"] .btn.pri, body[data-style="rpg"] .pbtn.main, body[data-style="rpg"] .pbtn.on {
+  background:linear-gradient(180deg,#b83535 0%,#a32b2b 55%,#7e1f22 100%); color:var(--on-accent);
+  border:1px solid var(--gold); box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 0 rgba(0,0,0,.3);
+  font-family:"Cinzel", Georgia, serif; font-weight:700; letter-spacing:.4px;
+}
+body[data-style="rpg"] .btn.danger { background:linear-gradient(180deg,#6b7482,#4a525e); border-color:#8a929e; }
+body[data-style="rpg"] input, body[data-style="rpg"] select { border:1px solid var(--line); }
+body[data-style="rpg"] .bar { border:1px solid var(--line); }
+body[data-style="rpg"] .bar > i { background:linear-gradient(90deg,#8a6d3b,#f0d282 50%,#8a6d3b); }
+body[data-style="rpg"] .seg { border:1px solid var(--line); }
+body[data-style="rpg"] .switch span { border:1px solid var(--line); }
+body[data-style="rpg"] .switch input:checked + span { background:linear-gradient(180deg,#b83535,#7e1f22); }
+body[data-style="rpg"] .nav { border-top:2px solid var(--line); }
+body[data-style="rpg"] .nav button { font-family:"Cinzel", Georgia, serif; font-weight:700; letter-spacing:.3px; }
+body[data-style="rpg"] .nav button.on { color:var(--accent-text); }
+body[data-style="rpg"] .hero { border:2px solid var(--line); box-shadow:inset 0 0 0 3px rgba(0,0,0,.25); }
+body[data-style="rpg"] .hero::before { content:""; position:absolute; inset:0; z-index:1;
+  background:linear-gradient(90deg, var(--card) 0 42%, transparent 72%); opacity:.92; }
+body[data-style="rpg"] .hero-bg { z-index:0; }
+body[data-style="rpg"] .hero-text { z-index:2; max-width:52%; padding:16px 12px 20px 16px; }
+body[data-style="rpg"] .hero-text::before { content:"— Guilda dos Downloads —"; display:block; font-family:"Cinzel",Georgia,serif;
+  font-size:9px; letter-spacing:1px; color:var(--accent-text); margin-bottom:4px; white-space:nowrap; text-transform:uppercase; }
+body[data-style="rpg"] .hero h1 { font-size:20px; color:var(--accent-text); text-shadow:0 2px 0 rgba(0,0,0,.35); }
+body[data-style="rpg"][data-mode="light"] .hero h1 { color:var(--text); text-shadow:0 1px 0 rgba(255,255,255,.6); }
+body[data-style="rpg"] .hero p { color:var(--soft); text-shadow:none; font-size:11px; }
+body[data-style="rpg"] #toast { background:#1a212b; color:#efe6d2; border:1px solid var(--gold); border-radius:6px; }
+body[data-style="rpg"] .suggest, body[data-style="rpg"] .banner.info { border-color:var(--gold); }
