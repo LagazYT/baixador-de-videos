@@ -130,7 +130,7 @@ jobs:
             - **Dois estilos novos:** **Arcade 8-bit** (pixel art de fliperama) e **Fantasia / RPG** (castelo, ouro e pergaminho), no claro e no escuro.
             - **Estilo visual em gaveta** em ⚙, com uma prévia das cores de cada estilo.
             - Corrigido: botões que vazavam para fora da tela em celulares estreitos (como "Relatar no GitHub").
-            - Quem está na 1.4.0 ou mais nova pode atualizar direto pelo app, em ⚙ › Atualizações do aplicativo.
+            - Quem está na 1.4.0 ou mais nova pode atualizar para a 1.6.2 direto pelo app, em ⚙ › Atualizações do aplicativo.
 
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).

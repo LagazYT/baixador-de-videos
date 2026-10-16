@@ -112,7 +112,7 @@ jobs:
 
             - **Dois estilos novos:** **Arcade 8-bit** (pixel art de fliperama, com fonte de pixels, moedas e corações) e **Fantasia / RPG** (castelo sob a lua, selo dourado, escudo e baú do tesouro). Funcionam com tema claro e escuro.
             - **Estilo visual em gaveta:** em ⚙, a escolha do estilo fica numa gaveta que mostra o estilo atual; abra para ver os seis estilos.
-            - Continua tudo da 1.6: gaveta **Mais opções** na aba Baixar (MP4 para editores, trecho, legendas e thumbnail) e relatório de erro.
+            - Continua tudo da 1.6.0 e 1.6.1: gaveta **Mais opções** na aba Baixar (MP4 para editores, trecho, legendas e thumbnail) e relatório de erro.
 
             > Quem está na 1.4.0 ou mais nova recebe esta versão pela atualização automática. Quem está na 1.3.0 ou anterior instala manualmente uma vez.
 
