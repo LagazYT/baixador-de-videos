@@ -726,22 +726,23 @@ function onSearchResults(d) {
   busyBtn($("#btn-search"), false);
   const box = $("#results");
   if (!d.results.length) { box.innerHTML = emptyArt("Nenhum resultado encontrado."); return; }
-  box.innerHTML = "";
+  box.innerHTML = '<div class="list-tip"><span class="tip-icon">👆</span><div><b>Toque no vídeo para escolher a qualidade.</b>' +
+    '<span>Ou toque em <i class="tip-dl">⬇</i> para baixar direto na melhor qualidade.</span></div></div>';
   d.results.forEach((r) => {
     const el = document.createElement("div");
-    el.className = "res";
+    el.className = "res item";
     el.innerHTML = '<img class="sthumb" alt="">' +
-      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div>" +
-      '<div class="b"><button class="btn pri sm" data-a="quick">⬇ Baixar</button>' +
-      '<button class="btn sm" data-a="pick">Qualidade</button></div></div>';
+      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div></div>" +
+      '<button class="icon-btn pri" data-a="quick" aria-label="Baixar na melhor qualidade">⬇</button>';
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = r.thumb || img("placeholder");
-    el.querySelector('[data-a="quick"]').addEventListener("click", () => {
+    el.querySelector('[data-a="quick"]').addEventListener("click", (e) => {
+      e.stopPropagation();
       startDownload({ url: r.url, title: r.title, uploader: r.uploader, duration: r.duration, thumb: r.thumb }, "best");
       showTab("baixar");
     });
-    el.querySelector('[data-a="pick"]').addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
+    el.addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
     box.appendChild(el);
   });
 }
