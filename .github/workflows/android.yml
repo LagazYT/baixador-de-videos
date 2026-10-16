@@ -127,10 +127,12 @@ jobs:
             um link e downloads que continuam em segundo plano.
 
             ### Novidades
-            - **Dois estilos novos:** **Arcade 8-bit** (pixel art de fliperama) e **Fantasia / RPG** (castelo, ouro e pergaminho), no claro e no escuro.
-            - **Estilo visual em gaveta** em ⚙, com uma prévia das cores de cada estilo.
-            - Corrigido: botões que vazavam para fora da tela em celulares estreitos (como "Relatar no GitHub").
-            - Quem está na 1.4.0 ou mais nova pode atualizar para a 1.6.2 direto pelo app, em ⚙ › Atualizações do aplicativo.
+            - **App mais limpo e organizado**, com os mesmos recursos:
+              - Aba Baixar em um fluxo só: cole o link, escolha a qualidade e acompanhe o download no mesmo cartão.
+              - Histórico e Pesquisar com uma ação principal por item; as outras ficam no menu ⋯.
+              - Configurações agrupadas e mais curtas; o motor de download e o cookies.txt ficam recolhidos.
+              - Menos barras fixas na tela e o banner só na aba Baixar.
+            - Quem está na 1.4.0 ou mais nova pode atualizar direto pelo app, em ⚙ › Atualizações.
 
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).

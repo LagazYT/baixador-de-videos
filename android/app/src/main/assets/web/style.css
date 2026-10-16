@@ -98,7 +98,7 @@ body[data-style="cyberpunk"] { --r:2px; --r-sm:2px; --font:"sans-serif-condensed
 /* ---------- base ---------- */
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:15px; }
-body { padding:12px 14px 132px; transition:background .2s; }
+body { padding:12px 14px calc(84px + env(safe-area-inset-bottom)); transition:background .2s; }
 .wrap { max-width:640px; margin:0 auto; }
 .hidden { display:none !important; }
 .muted { color:var(--muted); }
@@ -114,7 +114,7 @@ body[data-style="cyberpunk"] h3, body[data-style="cyberpunk"] .nav button, body[
 /* ---------- topo ---------- */
 #topbar { position:fixed; top:0; left:0; right:0; height:3px; z-index:20; pointer-events:none; }
 #topbar-fill { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
-.hero { position:relative; border-radius:var(--r); overflow:hidden; min-height:116px; margin-bottom:12px; background:var(--card); }
+.hero { position:relative; border-radius:var(--r); overflow:hidden; min-height:100px; margin-bottom:12px; background:var(--card); }
 .hero-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:right center; }
 .hero-text { position:relative; padding:20px 16px; max-width:62%; }
 .hero h1 { margin:0; font-size:22px; line-height:1.12; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.55); }
@@ -251,7 +251,7 @@ body[data-style="cyberpunk"] .switch span::after { border-radius:1px; }
 .switch input:checked + span::after { left:23px; }
 
 /* ---------- navegação, marca d'água, avisos ---------- */
-.nav { position:fixed; left:0; right:0; bottom:34px; height:60px; background:var(--nav); border-top:1px solid var(--line); display:flex; z-index:5; }
+.nav { position:fixed; left:0; right:0; bottom:0; height:calc(62px + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom); background:var(--nav); border-top:1px solid var(--line); display:flex; z-index:5; }
 body[data-style="cyberpunk"] .nav { border-top:2px solid var(--accent); }
 .nav button { flex:1; border:0; background:none; color:var(--muted); font-size:12px; font-weight:600; font-family:inherit;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
@@ -265,7 +265,7 @@ body[data-style="cyberpunk"] .nav button.on { color:var(--text); box-shadow:inse
 .footer span { position:relative; font-size:12px; font-weight:700; color:var(--footer-text); letter-spacing:.3px; }
 body[data-style="cyberpunk"] .footer span { text-transform:uppercase; letter-spacing:1px; }
 
-#toast { position:fixed; left:50%; bottom:112px; transform:translateX(-50%); background:#2b2f3b; color:#fff; padding:10px 16px;
+#toast { position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:#2b2f3b; color:#fff; padding:10px 16px;
   border-radius:12px; font-size:13px; z-index:30; max-width:88%; box-shadow:0 6px 20px rgba(0,0,0,.4); opacity:0;
   pointer-events:none; transition:opacity .2s; text-align:center; }
 body[data-style="cyberpunk"] #toast { border-radius:2px; border-left:4px solid var(--accent); background:#1a1b1f; }
@@ -500,3 +500,77 @@ body[data-style="rpg"][data-mode="light"] .hero h1 { color:var(--text); text-sha
 body[data-style="rpg"] .hero p { color:var(--soft); text-shadow:none; font-size:11px; }
 body[data-style="rpg"] #toast { background:#1a212b; color:#efe6d2; border:1px solid var(--gold); border-radius:6px; }
 body[data-style="rpg"] .suggest, body[data-style="rpg"] .banner.info { border-color:var(--gold); }
+
+/* ---------- layout limpo (1.6.3) ---------- */
+.page-title { font-size:22px; line-height:1.2; margin:6px 2px 14px; font-weight:700; }
+.page-head { display:flex; align-items:center; gap:8px; margin:6px 2px 12px; }
+.page-head .page-title { flex:1; margin:0; }
+.icon-btn { flex:none; width:42px; height:42px; border:0; border-radius:var(--r-sm); background:var(--card2); color:var(--text);
+  font-size:18px; font-family:inherit; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.icon-btn:active { background:var(--hover); }
+.icon-btn.pri { background:var(--accent); color:var(--on-accent); }
+.btn.full { display:block; width:100%; margin-top:12px; }
+
+.field { position:relative; }
+.field input { padding-right:86px; }
+.field-btn { position:absolute; right:6px; top:6px; height:34px; padding:0 12px; border:0; border-radius:calc(var(--r-sm) - 4px);
+  background:var(--card); color:var(--text); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+.field-btn:active { background:var(--hover); }
+.tip { margin:12px 2px 0; }
+
+.thumb-wrap { position:relative; }
+.badge { position:absolute; right:8px; bottom:8px; background:rgba(0,0,0,.78); color:#fff; font-size:12px; font-weight:600;
+  padding:2px 7px; border-radius:6px; font-variant-numeric:tabular-nums; }
+#choose-box .opts { margin-top:12px; }
+#progress-box { margin-top:14px; }
+#progress-box #btn-cancel { margin-top:12px; }
+#done-actions .row { margin-top:12px; }
+.link-row { justify-content:space-between; }
+.link-row .btn { height:36px; padding:0 4px; font-size:13px; }
+
+.res.item { flex-wrap:nowrap; align-items:center; cursor:pointer; padding:8px; }
+.res.item .sthumb { width:104px; height:58px; }
+.res.item:active { background:var(--hover); }
+.list-tip { margin:2px 4px 10px; }
+.center-note { text-align:center; margin:16px 10px 4px; }
+#hist-filter { margin:0 0 12px; height:42px; }
+#seg-src { margin-top:10px; }
+.list-head { display:flex; align-items:center; gap:10px; margin:6px 2px 10px; }
+.list-head h3 { margin:0; flex:none; }
+.list-head #p-filter { margin:0; height:38px; flex:1; }
+.small-ctrl { gap:6px; }
+.small-ctrl .pbtn.sm { min-width:46px; font-size:16px; }
+
+.group { font-size:13px; font-weight:600; color:var(--muted); margin:20px 4px 8px; }
+.page-title + .group { margin-top:4px; }
+.divider { height:1px; background:var(--card2); margin:12px 0 4px; }
+.sw-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.sw-text small { font-size:12px; color:var(--muted); font-weight:400; }
+.switch { margin:12px 0 8px; }
+#st-cookies.ok { color:var(--ok); font-weight:600; }
+.about { text-align:center; color:var(--muted); font-size:12px; margin:22px 10px 6px; }
+.about p { margin:4px 0; }
+#about { font-weight:700; color:var(--accent-text); font-size:13px; }
+
+.modal.sheet { align-items:flex-end; padding:0; }
+.modal.sheet .dialog { max-width:640px; border-radius:var(--r) var(--r) 0 0; margin:0 auto;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
+.modal.sheet .dialog h3 { font-size:15px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.modal.sheet .col { gap:6px; margin-top:10px; }
+.modal.sheet .btn { text-align:left; }
+.modal.sheet .btn.ghost { text-align:center; }
+
+/* títulos de página nos estilos */
+body[data-style="cyberpunk"] .page-title, body[data-style="retro"] .page-title { text-transform:uppercase; letter-spacing:.6px; font-size:19px; }
+body[data-style="steampunk"] .page-title { font-variant:small-caps; letter-spacing:.6px; }
+body[data-style="arcade"] .page-title { font-family:"Press Start 2P",monospace; font-size-adjust:none; font-size:15px; line-height:1.5; }
+body[data-style="rpg"] .page-title { font-family:"Cinzel",Georgia,serif; font-weight:700; color:var(--accent-text); }
+body[data-style="arcade"] .icon-btn, body[data-style="arcade"] .field-btn { border:2px solid var(--line); border-radius:0; }
+body[data-style="retro"] .icon-btn { border:2px solid var(--line); }
+body[data-style="steampunk"] .icon-btn, body[data-style="rpg"] .icon-btn { border:1px solid var(--line); }
+body[data-style="cyberpunk"] .icon-btn { border:1px solid var(--line); border-radius:2px; }
+body[data-style="arcade"] .badge { border-radius:0; font-family:"VT323",monospace; font-size:15px; }
+.nav button { min-width:0; }
+body[data-style="cyberpunk"] .nav button { font-size:11px; letter-spacing:.2px; }
+body[data-style="arcade"] .nav button { font-size:13px; letter-spacing:0; }
+body[data-style="retro"] .nav button { font-size:11px; letter-spacing:.2px; }

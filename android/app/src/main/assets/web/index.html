@@ -11,15 +11,6 @@
 <div id="topbar"><i id="topbar-fill"></i></div>
 
 <main class="wrap">
-  <header class="hero">
-    <img class="hero-bg" data-img="banner" alt="">
-    <div class="hero-text">
-      <span class="hero-tag">// SISTEMA DE DOWNLOAD</span>
-      <h1>Baixador de Vídeos</h1>
-      <p>Cole um link ou pesquise, escolha a qualidade e baixe.</p>
-    </div>
-  </header>
-
   <div id="app-update-banner" class="banner info hidden">
     <span id="app-update-banner-text"></span>
     <button class="btn pri sm" id="btn-go-update">Atualizar</button>
@@ -35,113 +26,131 @@
       <div class="info"><div class="t" id="sg-title"></div><div class="m" id="sg-meta"></div><div class="m warn-text" id="sg-note"></div></div>
     </div>
     <div class="row">
-      <button class="btn pri" id="sg-dl">⬇ Baixar</button>
-      <button class="btn" id="sg-pick">Qualidade...</button>
+      <button class="btn pri grow" id="sg-dl">⬇ Baixar</button>
+      <button class="btn" id="sg-pick">Qualidade</button>
       <button class="btn ghost" id="sg-ignore">Ignorar site</button>
     </div>
   </section>
 
   <!-- ABA BAIXAR -->
   <section id="tab-baixar" class="tab active">
-    <div class="card">
-      <input id="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false"
-             placeholder="Cole o link do vídeo aqui...">
-      <div class="row">
-        <button class="btn" id="btn-paste">Colar</button>
-        <button class="btn pri grow" id="btn-analyze">Analisar</button>
+    <header class="hero">
+      <img class="hero-bg" data-img="banner" alt="">
+      <div class="hero-text">
+        <span class="hero-tag">// SISTEMA DE DOWNLOAD</span>
+        <h1>Baixador de Vídeos</h1>
+        <p>Produzido por Lagaz</p>
       </div>
+    </header>
+
+    <div class="card link-card">
+      <div class="field">
+        <input id="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="Cole o link do vídeo">
+        <button class="field-btn" id="btn-paste" aria-label="Colar o link copiado">Colar</button>
+      </div>
+      <button class="btn pri big full" id="btn-analyze">Analisar</button>
+      <p class="muted small tip" id="link-tip">Funciona com YouTube, Instagram, TikTok e milhares de outros sites.
+        Em outro app, toque em <b>Compartilhar</b> e escolha <b>Baixador de Vídeos</b>.</p>
     </div>
 
     <div id="errbox" class="banner err hidden"></div>
 
-    <div class="card video">
-      <img id="thumb" class="thumb" data-img="placeholder" alt="">
+    <div class="card video hidden" id="video-card">
+      <div class="thumb-wrap">
+        <img id="thumb" class="thumb" data-img="placeholder" alt="">
+        <span class="badge hidden" id="vdur"></span>
+      </div>
       <h2 id="vtitle">Nenhum vídeo carregado</h2>
       <div id="vmeta" class="muted small"></div>
-      <label class="lbl" for="quality">Qualidade</label>
-      <select id="quality" disabled><option>—</option></select>
 
-      <div class="opts">
-        <button class="drawer-head" id="opts-toggle" aria-expanded="false">
-          <span class="arrow">▸</span><span class="dh-text"><b>Mais opções</b>
-          <small id="opts-summary">MP4 para editores, trecho, legendas e thumbnail</small></span>
-        </button>
-        <div id="opts-body" class="hidden">
-        <button class="btn sm thumb-btn" id="btn-thumb" disabled>🖼 Salvar thumbnail</button>
-        <label class="switch"><input type="checkbox" id="opt-compat"><span></span>
-          Compatível com editores (MP4 H.264)</label>
-        <p id="compat-hint" class="muted small hint"></p>
-        <label class="lbl" for="subs">Legendas</label>
-        <select id="subs" disabled><option value="">Sem legendas</option></select>
-        <p id="subs-hint" class="muted small hint"></p>
-        <label class="switch"><input type="checkbox" id="opt-trim"><span></span>
-          Baixar só um trecho</label>
-        <div id="trim-box" class="hidden">
-          <div class="row trim-row">
-            <div class="grow"><label class="lbl" for="trim-start">Início</label>
-              <input id="trim-start" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
-            <div class="grow"><label class="lbl" for="trim-end">Fim</label>
-              <input id="trim-end" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
+      <div id="choose-box">
+        <label class="lbl" for="quality">Qualidade</label>
+        <select id="quality" disabled><option>—</option></select>
+
+        <div class="opts">
+          <button class="drawer-head" id="opts-toggle" aria-expanded="false">
+            <span class="arrow">▸</span><span class="dh-text"><b>Mais opções</b>
+            <small id="opts-summary">MP4 para editores, trecho, legendas e thumbnail</small></span>
+          </button>
+          <div id="opts-body" class="hidden">
+          <button class="btn sm thumb-btn" id="btn-thumb" disabled>🖼 Salvar thumbnail</button>
+          <label class="switch"><input type="checkbox" id="opt-compat"><span></span>
+            Compatível com editores (MP4 H.264)</label>
+          <p id="compat-hint" class="muted small hint"></p>
+          <label class="lbl" for="subs">Legendas</label>
+          <select id="subs" disabled><option value="">Sem legendas</option></select>
+          <p id="subs-hint" class="muted small hint"></p>
+          <label class="switch"><input type="checkbox" id="opt-trim"><span></span>
+            Baixar só um trecho</label>
+          <div id="trim-box" class="hidden">
+            <div class="row trim-row">
+              <div class="grow"><label class="lbl" for="trim-start">Início</label>
+                <input id="trim-start" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
+              <div class="grow"><label class="lbl" for="trim-end">Fim</label>
+                <input id="trim-end" type="text" autocomplete="off" spellcheck="false" placeholder="0:00"></div>
+            </div>
+            <label class="switch"><input type="checkbox" id="opt-exact"><span></span>
+              Corte exato (mais lento)</label>
+            <p class="muted small hint">Use minutos:segundos (ex.: 2:15). Sem o corte exato, o vídeo pode
+              começar um pouco antes do ponto escolhido. O MP3 sempre sai no ponto exato.</p>
           </div>
-          <label class="switch"><input type="checkbox" id="opt-exact"><span></span>
-            Corte exato (mais lento)</label>
-          <p class="muted small hint">Use minutos:segundos (ex.: 2:15). Sem o corte exato, o vídeo pode
-            começar um pouco antes do ponto escolhido (o corte cai no quadro-chave mais próximo).
-            O MP3 sempre sai no ponto exato.</p>
+          </div>
         </div>
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn pri grow big" id="btn-download" disabled>⬇ Baixar</button>
-        <button class="btn danger" id="btn-cancel" disabled>Cancelar</button>
-      </div>
-      <div class="row">
-        <button class="btn grow" id="btn-folder">📁 Abrir pasta de downloads</button>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="bar"><i id="progress"></i></div>
-      <div id="status" class="muted small">Cole o link do vídeo e toque em Analisar.</div>
-      <div id="done-actions" class="row hidden">
-        <button class="btn pri grow" id="btn-open-last">▶ Assistir</button>
-        <button class="btn grow" id="btn-share-last">Compartilhar</button>
+        <button class="btn pri big full" id="btn-download" disabled>⬇ Baixar</button>
+      </div>
+
+      <!-- andamento do download (aparece só quando há um) -->
+      <div id="progress-box" class="hidden">
+        <div class="bar"><i id="progress"></i></div>
+        <div id="status" class="muted small"></div>
+        <button class="btn danger full" id="btn-cancel" disabled>Cancelar download</button>
+        <div id="done-actions" class="hidden">
+          <div class="row">
+            <button class="btn pri grow" id="btn-open-last">▶ Assistir</button>
+            <button class="btn grow" id="btn-share-last">Compartilhar</button>
+          </div>
+          <div class="row link-row">
+            <button class="btn ghost" id="btn-folder">📁 Abrir a pasta</button>
+            <button class="btn ghost" id="btn-again">Baixar com outras opções</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ABA PESQUISAR -->
   <section id="tab-pesquisar" class="tab">
+    <h1 class="page-title">Pesquisar</h1>
     <div class="card">
-      <input id="q" type="search" enterkeyhint="search" autocomplete="off" placeholder="Pesquisar vídeos...">
-      <div class="row">
-        <select id="src" class="grow">
-          <option value="youtube">YouTube</option>
-          <option value="youtube_recent">YouTube (recentes)</option>
-          <option value="soundcloud">SoundCloud (áudio)</option>
-        </select>
-        <button class="btn pri" id="btn-search">Buscar</button>
+      <div class="field">
+        <input id="q" type="search" enterkeyhint="search" autocomplete="off" placeholder="Nome do vídeo, música ou canal">
+        <button class="field-btn" id="btn-search" aria-label="Buscar">Buscar</button>
       </div>
-      <p class="muted small">Outros sites: pesquise no navegador, toque em Compartilhar no vídeo e escolha
-        <b>Baixador de Vídeos</b>. <a href="#" id="web-search">🌐 Pesquisar na web</a></p>
+      <div class="seg" id="seg-src">
+        <button data-v="youtube" class="on">YouTube</button><button data-v="youtube_recent">Recentes</button><button data-v="soundcloud">SoundCloud</button>
+      </div>
     </div>
     <div id="results"></div>
+    <p class="muted small center-note">Outro site? Compartilhe o vídeo direto do app ou
+      <a href="#" id="web-search">pesquise na web</a>.</p>
   </section>
 
   <!-- ABA HISTÓRICO -->
   <section id="tab-historico" class="tab">
-    <div class="card">
-      <div class="row between">
-        <h3 id="hist-count">Histórico</h3>
-        <button class="btn small-btn" id="btn-hist-clear">Limpar histórico</button>
-      </div>
-      <input id="hist-filter" type="search" autocomplete="off" placeholder="Filtrar por título ou canal...">
+    <div class="page-head">
+      <h1 class="page-title" id="hist-count">Histórico</h1>
+      <button class="icon-btn" id="btn-folder-hist" aria-label="Abrir a pasta dos downloads">📁</button>
+      <button class="icon-btn" id="btn-hist-clear" aria-label="Limpar histórico">🗑</button>
     </div>
+    <input id="hist-filter" type="search" autocomplete="off" placeholder="Filtrar por título ou canal">
     <div id="hist-list"></div>
   </section>
 
   <!-- ABA PLAYER -->
   <section id="tab-player" class="tab">
+    <h1 class="page-title">Player</h1>
     <div class="card">
       <div class="player-box" id="player-box">
         <video id="video" playsinline preload="metadata"></video>
@@ -163,126 +172,119 @@
         <button class="pbtn" id="p-fwd" aria-label="Avançar 10 segundos">10↻</button>
         <button class="pbtn" id="p-next" aria-label="Próximo">⏭</button>
       </div>
-      <div class="pctrl">
+      <div class="pctrl small-ctrl">
         <button class="pbtn sm" id="p-mute" aria-label="Sem som">🔊</button>
         <select id="p-speed" aria-label="Velocidade">
           <option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option>
           <option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option>
         </select>
-        <button class="pbtn sm" id="p-loop" aria-label="Repetir">🔁 Repetir</button>
-        <button class="pbtn sm" id="p-full" aria-label="Tela cheia">⛶ Tela cheia</button>
+        <button class="pbtn sm" id="p-loop" aria-label="Repetir">🔁</button>
+        <button class="pbtn sm" id="p-full" aria-label="Tela cheia">⛶</button>
       </div>
       <div id="p-error" class="banner err hidden"></div>
     </div>
-    <div class="card">
+    <div class="list-head">
       <h3>Seus vídeos</h3>
-      <input id="p-filter" type="search" autocomplete="off" placeholder="Filtrar por título ou canal...">
+      <input id="p-filter" type="search" autocomplete="off" placeholder="Filtrar">
     </div>
     <div id="p-list"></div>
   </section>
 
   <!-- ABA CONFIGURAÇÕES -->
   <section id="tab-config" class="tab">
+    <h1 class="page-title">Configurações</h1>
+
+    <h2 class="group">Aparência</h2>
     <div class="card">
-      <h3>Aparência</h3>
-      <p class="muted small">Escolha o tema do aplicativo. "Sistema" acompanha o tema do celular.</p>
       <div class="seg" id="seg-theme">
         <button data-v="light">Claro</button><button data-v="dark">Escuro</button><button data-v="system">Sistema</button>
       </div>
-    </div>
-
-    <div class="card" id="card-style">
-      <button class="drawer-head" id="style-toggle" aria-expanded="false">
-        <span class="arrow">▸</span><span class="dh-text"><b>Estilo visual</b>
-        <small id="style-summary">Atual: Clássico</small></span>
-      </button>
-      <div id="style-body" class="hidden">
-        <p class="muted small">Muda as cores, as formas e as imagens do app. Toque em um estilo para usar.</p>
-        <div class="style-grid" id="seg-style">
-          <button data-v="classico"><i class="sw sw-classico"></i><span>Clássico<small>roxo e rosa</small></span></button>
-          <button data-v="cyberpunk"><i class="sw sw-cyberpunk"></i><span>Cyberpunk<small>amarelo e vermelho</small></span></button>
-          <button data-v="retro"><i class="sw sw-retro"></i><span>Retrô<small>creme e laranja</small></span></button>
-          <button data-v="steampunk"><i class="sw sw-steampunk"></i><span>Steampunk<small>latão e cobre</small></span></button>
-          <button data-v="arcade"><i class="sw sw-arcade"></i><span>Arcade 8-bit<small>pixel art</small></span></button>
-          <button data-v="rpg"><i class="sw sw-rpg"></i><span>Fantasia / RPG<small>castelo e ouro</small></span></button>
+      <div class="divider"></div>
+      <div id="card-style">
+        <button class="drawer-head" id="style-toggle" aria-expanded="false">
+          <span class="arrow">▸</span><span class="dh-text"><b>Estilo visual</b>
+          <small id="style-summary">Atual: Clássico</small></span>
+        </button>
+        <div id="style-body" class="hidden">
+          <div class="style-grid" id="seg-style">
+            <button data-v="classico"><i class="sw sw-classico"></i><span>Clássico<small>roxo e rosa</small></span></button>
+            <button data-v="cyberpunk"><i class="sw sw-cyberpunk"></i><span>Cyberpunk<small>amarelo e vermelho</small></span></button>
+            <button data-v="retro"><i class="sw sw-retro"></i><span>Retrô<small>creme e laranja</small></span></button>
+            <button data-v="steampunk"><i class="sw sw-steampunk"></i><span>Steampunk<small>latão e cobre</small></span></button>
+            <button data-v="arcade"><i class="sw sw-arcade"></i><span>Arcade 8-bit<small>pixel art</small></span></button>
+            <button data-v="rpg"><i class="sw sw-rpg"></i><span>Fantasia / RPG<small>castelo e ouro</small></span></button>
+          </div>
         </div>
       </div>
     </div>
 
+    <h2 class="group">Downloads</h2>
     <div class="card">
-      <h3>Segundo plano</h3>
       <label class="switch"><input type="checkbox" id="opt-notify"><span></span>
-        Avisar quando um download terminar</label>
-      <p class="muted small">Os downloads continuam com a tela desligada ou com o app minimizado. O progresso aparece
-        na barra de notificações, com botão para cancelar.</p>
-    </div>
-
-    <div class="card">
-      <h3>Sugestões de download</h3>
+        <div class="sw-text">Avisar quando terminar<small>Os downloads continuam com a tela desligada.</small></div></label>
       <label class="switch"><input type="checkbox" id="opt-clipboard"><span></span>
-        Sugerir o download quando eu copiar o link de um vídeo</label>
-      <p class="muted small">Assistindo no YouTube, TikTok, Instagram ou no navegador? Toque em <b>Compartilhar</b> e escolha
-        <b>Baixador de Vídeos</b>: o vídeo já abre aqui pronto para baixar.</p>
-      <div class="row"><button class="btn grow" id="btn-ignored">Limpar sites ignorados</button></div>
+        <div class="sw-text">Sugerir ao copiar um link<small>Mostra o vídeo pronto para baixar ao abrir o app.</small></div></label>
+      <div class="kv"><span>Pasta</span><b id="st-folder">Download/BaixadorDeVideos</b></div>
+      <div class="row"><button class="btn ghost" id="btn-ignored">Sites ignorados</button></div>
     </div>
 
-    <div class="card">
-      <h3>Login (vídeos com restrição de idade)</h3>
-      <p class="muted small">O YouTube só libera vídeos com restrição de idade para quem está logado. Exporte um arquivo
-        <b>cookies.txt</b> de um navegador logado no YouTube (extensão "Get cookies.txt LOCALLY"; o mais fácil é no
-        computador) e envie o arquivo para o celular. Ele fica só neste aparelho.</p>
-      <div class="kv"><span>cookies.txt</span><b id="st-cookies">nenhum</b></div>
-      <div class="col">
-        <button class="btn pri" id="btn-cookie">Escolher cookies.txt</button>
-        <button class="btn danger" id="btn-cookie-clear">Remover cookies.txt</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Motor de download</h3>
-      <div class="kv"><span>yt-dlp</span><b id="st-ytdlp">...</b></div>
-      <div class="kv"><span>Pasta dos downloads</span><b id="st-folder">Download/BaixadorDeVideos</b></div>
-      <label class="switch"><input type="checkbox" id="opt-autoupdate"><span></span>
-        Atualizar o yt-dlp automaticamente (1x por dia)</label>
-      <p class="muted small">Se um site parar de funcionar, atualize. Os sites mudam com frequência.</p>
-      <div class="row"><button class="btn grow" id="btn-update">Atualizar agora</button></div>
-      <p id="update-msg" class="muted small"></p>
-    </div>
-
+    <h2 class="group">Atualizações</h2>
     <div class="card" id="card-updates">
-      <h3>Atualizações do aplicativo</h3>
-      <div class="kv"><span>Versão instalada</span><b id="upd-current">...</b></div>
+      <div class="kv"><span>Versão do app</span><b id="upd-current">...</b></div>
       <p id="upd-status" class="muted small">Toque em "Buscar atualizações" para verificar.</p>
       <p id="upd-notes" class="small pre hidden"></p>
       <div id="upd-bar" class="bar hidden"><i id="upd-progress"></i></div>
-      <div class="row">
-        <button class="btn grow" id="btn-check-update">Buscar atualizações</button>
-      </div>
       <div class="row hidden" id="upd-actions">
         <button class="btn pri grow" id="btn-install-update">⬇ Baixar e instalar</button>
         <button class="btn" id="btn-update-page">Novidades</button>
       </div>
+      <button class="btn full" id="btn-check-update">Buscar atualizações</button>
       <label class="switch"><input type="checkbox" id="opt-autocheck"><span></span>
-        Verificar atualizações automaticamente</label>
-    </div>
-
-    <div class="card">
-      <h3>Problemas?</h3>
-      <p class="muted small">Se um download falhar, copie o relatório de erro e mande para quem está te
-        ajudando, ou abra um relato no GitHub. Ele traz a versão do app, do Android e do yt-dlp e os
-        últimos erros.</p>
-      <div class="col">
-        <button class="btn pri" id="btn-report">Copiar relatório de erro</button>
-        <button class="btn" id="btn-issues">Relatar no GitHub</button>
+        <div class="sw-text">Verificar sozinho</div></label>
+      <div class="divider"></div>
+      <button class="drawer-head" data-drawer="engine-body" aria-expanded="false">
+        <span class="arrow">▸</span><span class="dh-text"><b>Motor de download</b>
+        <small>yt-dlp <span id="st-ytdlp">...</span></small></span>
+      </button>
+      <div id="engine-body" class="hidden">
+        <label class="switch"><input type="checkbox" id="opt-autoupdate"><span></span>
+          <div class="sw-text">Atualizar o motor sozinho<small>Uma vez por dia. Os sites mudam com frequência.</small></div></label>
+        <button class="btn full" id="btn-update">Atualizar o motor agora</button>
+        <p id="update-msg" class="muted small hint"></p>
       </div>
     </div>
 
+    <h2 class="group">Vídeos com restrição de idade</h2>
     <div class="card">
-      <h3>Baixador de Vídeos</h3>
-      <p class="muted small" id="about">Produzido por Lagaz</p>
-      <p class="muted small">Use apenas para conteúdo que você tem direito de baixar e respeite os termos de uso dos sites.</p>
+      <button class="drawer-head" data-drawer="cookies-body" aria-expanded="false">
+        <span class="arrow">▸</span><span class="dh-text"><b>cookies.txt</b>
+        <small>Arquivo: <span id="st-cookies">nenhum</span></small></span>
+      </button>
+      <div id="cookies-body" class="hidden">
+        <p class="muted small">O YouTube só libera esses vídeos para quem está logado. Exporte um <b>cookies.txt</b>
+          de um navegador logado no YouTube (extensão "Get cookies.txt LOCALLY") e envie para o celular.
+          O arquivo fica só neste aparelho.</p>
+        <div class="col">
+          <button class="btn pri" id="btn-cookie">Escolher cookies.txt</button>
+          <button class="btn danger" id="btn-cookie-clear">Remover cookies.txt</button>
+        </div>
+      </div>
     </div>
-    <p class="version-foot" id="version-foot">Baixador de Vídeos</p>
+
+    <h2 class="group">Ajuda</h2>
+    <div class="card">
+      <p class="muted small">Se um download falhar, copie o relatório de erro e mande para quem está te ajudando.</p>
+      <div class="col">
+        <button class="btn" id="btn-report">Copiar relatório de erro</button>
+        <button class="btn ghost" id="btn-issues">Relatar no GitHub</button>
+      </div>
+    </div>
+
+    <div class="about">
+      <p id="about">Produzido por Lagaz</p>
+      <p id="version-foot">Baixador de Vídeos</p>
+      <p>Use apenas para conteúdo que você tem direito de baixar e respeite os termos de uso dos sites.</p>
+    </div>
   </section>
 </main>
 
@@ -305,10 +307,9 @@
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Histórico</button>
   <button data-tab="player">
     <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/></svg>Player</button>
-  <button data-tab="config" class="gear" aria-label="Configurações">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+  <button data-tab="config" aria-label="Configurações">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Ajustes</button>
 </nav>
-<div class="footer"><img data-img="footer" alt=""><span>Produzido por Lagaz</span></div>
 
 <script src="app.js"></script>
 </body>

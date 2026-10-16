@@ -44,6 +44,9 @@ const S = {
   version: "",
   appUpdate: null,      // informações da versão nova do app
   pendingAuto: null,    // "Baixar de novo": opções a aplicar depois da análise
+  jobInfo: null,        // vídeo do download atual (título e miniatura para o cartão)
+  chooseAgain: false,   // "Baixar com outras opções" depois de concluir
+  searchSrc: "youtube",
   lastError: "",        // último erro (vai no relatório de erro)
 };
 
@@ -227,14 +230,16 @@ function saveSettings() {
 }
 
 /* ---------- janela de diálogo ---------- */
-function modal(title, text, buttons) {
+function modal(title, text, buttons, opts) {
+  $("#modal").classList.toggle("sheet", !!(opts && opts.sheet));
   $("#modal-title").textContent = title;
-  $("#modal-text").textContent = text;
+  $("#modal-text").textContent = text || "";
+  $("#modal-text").classList.toggle("hidden", !text);
   const box = $("#modal-buttons");
   box.innerHTML = "";
   (buttons || [{ label: "OK", pri: true }]).forEach((b) => {
     const el = document.createElement("button");
-    el.className = "btn" + (b.pri ? " pri" : "") + (b.danger ? " danger" : "") + (b.ghost ? " ghost" : "");
+    el.className = "btn" + (b.pri ? " pri" : "") + (b.danger ? " danger" : "") + (b.ghost ? " ghost" : "") + (b.cls ? " " + b.cls : "");
     el.textContent = b.label;
     el.addEventListener("click", () => { if (!b.keep) closeModal(); if (b.fn) b.fn(); });
     box.appendChild(el);
@@ -249,6 +254,7 @@ function modal(title, text, buttons) {
   $("#modal").classList.remove("hidden");
 }
 function closeModal() { $("#modal").classList.add("hidden"); }
+$("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });  // toque fora fecha
 function confirmBox(title, text, okLabel, fn) {
   modal(title, text, [{ label: okLabel, pri: true, fn }, { label: "Cancelar", ghost: true }]);
 }
@@ -337,8 +343,10 @@ function resetVideo(title) {
   $("#opt-trim").checked = false;
   $("#trim-box").classList.add("hidden");
   $("#btn-thumb").disabled = true;
+  $("#vdur").classList.add("hidden");
   refreshOptions();
   updateButtons();
+  renderCard();
 }
 
 function analyze(url) {
@@ -350,10 +358,9 @@ function analyze(url) {
   $("#url").value = url;
   $("#errbox").classList.add("hidden");
   S.analyzeReq = nextId("a");
-  resetVideo("Carregando...");
+  S.chooseAgain = false;
+  resetVideo();
   busyBtn($("#btn-analyze"), true, "Analisando");
-  setStatus("Analisando o link...", "");
-  setIndeterminate(true);
   N.analyze(S.analyzeReq, url);
 }
 
@@ -361,7 +368,6 @@ function onAnalyzed(d) {
   if (d.reqId === S.probeReq) { showSuggestion(d); return; }
   if (d.reqId !== S.analyzeReq) return;
   busyBtn($("#btn-analyze"), false);
-  setIndeterminate(false);
   S.video = d;
   const th = $("#thumb");
   th.onerror = () => { th.dataset.real = ""; placeholderImg(th); };
@@ -401,9 +407,11 @@ function onAnalyzed(d) {
     }
   }
   $("#trim-box").classList.toggle("hidden", !$("#opt-trim").checked);
+  $("#vdur").textContent = d.duration || "";
+  $("#vdur").classList.toggle("hidden", !d.duration);
   refreshOptions();
   updateButtons();
-  setStatus("Pronto para baixar. Escolha a qualidade.", "");
+  renderCard();
   if (pend) downloadFromUi();
 }
 
@@ -492,11 +500,9 @@ function onAnalyzeError(d) {
   if (d.reqId === S.probeReq) return; // sugestão silenciosa: ignora links que não são vídeo
   if (d.reqId !== S.analyzeReq) return;
   busyBtn($("#btn-analyze"), false);
-  setIndeterminate(false);
   S.pendingAuto = null;
   S.lastError = d.msg || "";
   resetVideo();
-  setStatus("Não foi possível analisar o link.", "err");
   const box = $("#errbox");
   box.textContent = d.msg;
   box.classList.remove("hidden");
@@ -520,7 +526,9 @@ function startDownload(info, quality, o) {
   // sem opções explícitas (pesquisa, sugestão): usa a preferência de H.264
   o = o || compatPlan(!!S.settings.compat, quality, info.codecKnown ? info : null);
   if (!o.compat && o.mode) o = { compat: o.mode, height: o.h };
-  $("#done-actions").classList.add("hidden");
+  S.jobInfo = { url: info.url, title: info.title || "", uploader: info.uploader || "", duration: info.duration || "",
+    thumb: info.thumbnail || info.thumb || "" };
+  S.chooseAgain = false;
   const payload = {
     url: info.url, quality, title: info.title || "", uploader: info.uploader || "",
     duration: info.duration || "", thumb: info.thumbnail || info.thumb || "",
@@ -547,16 +555,49 @@ function updateButtons() {
   $("#btn-cancel").disabled = !active;
 }
 
+/* Cartão do vídeo: o mesmo cartão mostra as opções, o andamento e o resultado do download. */
+function renderCard() {
+  const j = S.job;
+  const shown = !!j && (ACTIVE.includes(j.status) || j.status === "done" || j.status === "error");
+  const active = !!j && ACTIVE.includes(j.status);
+  const same = !S.video || (shown && S.jobInfo && S.jobInfo.url === S.video.url);
+  const info = S.video || (shown ? S.jobInfo : null);
+  $("#video-card").classList.toggle("hidden", !info);
+  $("#link-tip").classList.toggle("hidden", !!info);
+  // com um vídeo na tela, a ação principal passa a ser "Baixar"
+  $("#btn-analyze").classList.toggle("pri", !S.video);
+  if (!info) return;
+  if (!S.video) {  // download vindo da pesquisa, do histórico ou da sugestão
+    const th = $("#thumb");
+    th.onerror = () => { th.dataset.real = ""; placeholderImg(th); };
+    if (info.thumb) { th.dataset.real = "1"; th.src = info.thumb; } else { th.dataset.real = ""; th.src = img("placeholder"); }
+    $("#vtitle").textContent = info.title || "Download";
+    $("#vmeta").textContent = info.uploader || "";
+    $("#vdur").textContent = info.duration || "";
+    $("#vdur").classList.toggle("hidden", !info.duration);
+  }
+  const choose = !!S.video && (!shown || !same || j.status === "error" || S.chooseAgain);
+  $("#choose-box").classList.toggle("hidden", !choose);
+  $("#progress-box").classList.toggle("hidden", !shown || (!same && !active));
+  $("#btn-cancel").classList.toggle("hidden", !active);
+  $("#done-actions").classList.toggle("hidden", !(shown && j.status === "done" && same));
+  $("#btn-again").classList.toggle("hidden", !S.video || choose);
+}
+
 function onJob(j) {
   S.job = j;
+  if (!S.jobInfo || S.jobInfo.url !== j.url) S.jobInfo = { url: j.url, title: j.title || "" };
   const active = ACTIVE.includes(j.status);
   const pct = Math.max(0, Math.min(100, j.pct || 0));
   $("#progress").style.width = (j.status === "done" ? 100 : pct) + "%";
   setIndeterminate(j.status === "starting" || j.status === "saving" || j.status === "processing");
   $("#topbar-fill").style.width = active ? Math.max(3, pct) + "%" : "0";
-  const prefix = active && j.title ? j.title.slice(0, 60) + "\n" : "";
-  setStatus(prefix + j.text, j.status === "done" ? "ok" : (j.status === "error" ? "err" : ""));
+  // com outro vídeo na tela, diz qual vídeo está baixando
+  const other = active && S.video && S.video.url !== j.url && j.title;
+  setStatus((other ? "Baixando: " + j.title.slice(0, 60) + "\n" : "") + j.text,
+    j.status === "done" ? "ok" : (j.status === "error" ? "err" : ""));
   updateButtons();
+  renderCard();
 }
 
 function onDone(d) {
@@ -564,8 +605,8 @@ function onDone(d) {
   S.lastDone = e;
   const note = d.note || (d.fallback ? "formato ajustado para compatibilidade" : "");
   setStatus("✔ " + (note ? "Concluído, " + note + "." : "Download concluído!") +
-    "\nSalvo em Download/BaixadorDeVideos/" + (e.name || ""), "ok");
-  $("#done-actions").classList.remove("hidden");
+    "\nSalvo em Download/BaixadorDeVideos", "ok");
+  renderCard();
   toast("Download concluído!");
   S.history = [e].concat(S.history.filter((h) => h.id !== e.id));
   if (S.tab === "historico") renderHistory();
@@ -606,6 +647,8 @@ $("#btn-thumb").addEventListener("click", () => {
 });
 $("#btn-cancel").addEventListener("click", () => N.cancel());
 $("#btn-folder").addEventListener("click", () => N.openDownloads());
+$("#btn-folder-hist").addEventListener("click", () => N.openDownloads());
+$("#btn-again").addEventListener("click", () => { S.chooseAgain = true; renderCard(); });
 $("#btn-open-last").addEventListener("click", () => { if (S.lastDone) playEntry(S.lastDone); });
 $("#btn-share-last").addEventListener("click", () => { if (S.lastDone) N.shareFile(S.lastDone.uri, S.lastDone.mime || ""); });
 
@@ -675,7 +718,7 @@ function search() {
   S.searchReq = nextId("s");
   busyBtn($("#btn-search"), true, "Buscando");
   $("#results").innerHTML = '<p class="muted small" style="text-align:center;padding:24px 0">Buscando...</p>';
-  N.search(S.searchReq, q, $("#src").value);
+  N.search(S.searchReq, q, S.searchSrc);
 }
 
 function onSearchResults(d) {
@@ -683,22 +726,22 @@ function onSearchResults(d) {
   busyBtn($("#btn-search"), false);
   const box = $("#results");
   if (!d.results.length) { box.innerHTML = emptyArt("Nenhum resultado encontrado."); return; }
-  box.innerHTML = "";
+  box.innerHTML = '<p class="muted small list-tip">Toque num vídeo para escolher a qualidade, ou em ⬇ para baixar direto.</p>';
   d.results.forEach((r) => {
     const el = document.createElement("div");
-    el.className = "res";
+    el.className = "res item";
     el.innerHTML = '<img class="sthumb" alt="">' +
-      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div>" +
-      '<div class="b"><button class="btn pri sm" data-a="quick">⬇ Baixar</button>' +
-      '<button class="btn sm" data-a="pick">Qualidade...</button></div></div>';
+      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div></div>" +
+      '<button class="icon-btn pri" data-a="quick" aria-label="Baixar na melhor qualidade">⬇</button>';
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = r.thumb || img("placeholder");
-    el.querySelector('[data-a="quick"]').addEventListener("click", () => {
+    el.querySelector('[data-a="quick"]').addEventListener("click", (e) => {
+      e.stopPropagation();
       startDownload({ url: r.url, title: r.title, uploader: r.uploader, duration: r.duration, thumb: r.thumb }, "best");
       showTab("baixar");
     });
-    el.querySelector('[data-a="pick"]').addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
+    el.addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
     box.appendChild(el);
   });
 }
@@ -710,6 +753,11 @@ function onSearchError(d) {
 }
 
 $("#btn-search").addEventListener("click", search);
+$$("#seg-src button").forEach((b) => b.addEventListener("click", () => {
+  S.searchSrc = b.dataset.v;
+  $$("#seg-src button").forEach((x) => x.classList.toggle("on", x === b));
+  if ($("#q").value.trim()) search();
+}));
 $("#q").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } });
 $("#web-search").addEventListener("click", (e) => {
   e.preventDefault();
@@ -726,7 +774,7 @@ function renderHistory() {
     box.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Carregando...</p>';
     return;
   }
-  $("#hist-count").textContent = "Histórico (" + S.history.length + ")";
+  $("#hist-count").textContent = S.history.length ? "Histórico (" + S.history.length + ")" : "Histórico";
   const items = S.history.filter((h) => !f || ((h.title || "") + " " + (h.uploader || "")).toLowerCase().includes(f));
   if (!items.length) {
     box.innerHTML = f ? '<p class="muted small" style="text-align:center;padding:20px">Nenhum resultado para esse filtro.</p>'
@@ -736,36 +784,20 @@ function renderHistory() {
   box.innerHTML = "";
   items.slice(0, S.histLimit).forEach((h) => {
     const el = document.createElement("div");
-    el.className = "res";
+    el.className = "res item";
     const who = [h.uploader, h.duration].filter(Boolean).join("  •  ");
     const meta = [h.date, entryLabel(h), fmtBytes(h.size)].filter(Boolean).join("  •  ");
     el.innerHTML = '<img class="sthumb" alt="">' +
       '<div class="info"><div class="t">' + esc(h.title) + "</div>" +
       (who ? '<div class="m">' + esc(who) + "</div>" : "") +
       '<div class="m">' + esc(meta) + "</div>" +
-      '<div class="m ' + (h.exists ? "exists" : "missing") + '">' +
-      (h.exists ? "✔ Arquivo no celular" : "Arquivo não encontrado (movido ou apagado)") + "</div></div>" +
-      '<div class="b full"><button class="btn pri sm grow" data-a="again">↻ Baixar de novo</button>' +
-      '<button class="btn sm" data-a="pick">Qualidade</button>' +
-      '<button class="btn sm" data-a="open">▶ Assistir</button>' +
-      '<button class="btn sm link-danger" data-a="del">Remover</button></div>';
+      (h.exists ? "" : '<div class="m missing">Arquivo não encontrado no celular</div>') + "</div>" +
+      '<button class="icon-btn" data-a="menu" aria-label="Mais ações">⋯</button>';
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = h.thumb || img("placeholder");
-    el.querySelector('[data-a="again"]').addEventListener("click", () => redownload(h));
-    el.querySelector('[data-a="pick"]').addEventListener("click", () => { S.pendingAuto = null; showTab("baixar"); analyze(h.url); });
-    el.querySelector('[data-a="open"]').addEventListener("click", () => {
-      if (!h.exists) {
-        modal("Arquivo não encontrado", "Esse arquivo foi movido ou apagado. Use \"Baixar de novo\" para baixá-lo outra vez.");
-        return;
-      }
-      playEntry(h);
-    });
-    el.querySelector('[data-a="del"]').addEventListener("click", () => {
-      N.removeHistory(h.id);
-      S.history = S.history.filter((x) => x.id !== h.id);
-      renderHistory();
-    });
+    el.querySelector('[data-a="menu"]').addEventListener("click", (e) => { e.stopPropagation(); historyActions(h); });
+    el.addEventListener("click", () => { if (h.exists) playEntry(h); else historyActions(h); });
     box.appendChild(el);
   });
   if (items.length > S.histLimit) {
@@ -775,6 +807,23 @@ function renderHistory() {
     more.addEventListener("click", () => { S.histLimit += 30; renderHistory(); });
     box.appendChild(more);
   }
+}
+
+/* menu de ações de um item do histórico */
+function historyActions(h) {
+  const acts = [];
+  if (h.exists) acts.push({ label: "▶ Assistir", pri: true, fn: () => playEntry(h) });
+  acts.push({ label: "↻ Baixar de novo", pri: !h.exists, fn: () => redownload(h) });
+  acts.push({ label: "Escolher outra qualidade", fn: () => { S.pendingAuto = null; showTab("baixar"); analyze(h.url); } });
+  if (h.exists) acts.push({ label: "Compartilhar", fn: () => N.shareFile(h.uri, h.mime || "") });
+  acts.push({ label: "Remover do histórico", cls: "link-danger", fn: () => {
+    N.removeHistory(h.id);
+    S.history = S.history.filter((x) => x.id !== h.id);
+    renderHistory();
+    toast("Removido do histórico. O arquivo continua no celular.");
+  } });
+  acts.push({ label: "Fechar", ghost: true });
+  modal(h.title || "Vídeo", h.exists ? "" : "O arquivo foi movido ou apagado do celular.", acts, { sheet: true });
 }
 
 /* "Baixar de novo": analisa o link e baixa com as mesmas opções (pergunta se era um trecho) */
@@ -840,15 +889,16 @@ function renderPlayerList() {
   items.slice(0, 80).forEach((h) => {
     const playing = S.playing && S.playing.id === h.id;
     const el = document.createElement("div");
-    el.className = "res" + (playing ? " playing" : "");
+    el.className = "res item" + (playing ? " playing" : "");
     el.innerHTML = '<img class="sthumb" alt="">' +
       '<div class="info"><div class="t">' + esc(h.title) + "</div>" +
-      '<div class="m">' + esc([h.uploader, h.duration, entryLabel(h)].filter(Boolean).join("  •  ")) + "</div>" +
-      '<div class="b"><button class="btn pri sm" data-a="play">' + (playing ? "⏸ Tocando" : "▶ Assistir") + "</button></div></div>";
+      '<div class="m">' + esc([h.uploader, h.duration, entryLabel(h)].filter(Boolean).join("  •  ")) + "</div></div>" +
+      '<button class="icon-btn' + (playing ? " pri" : "") + '" data-a="play" aria-label="' + (playing ? "Pausar ou continuar" : "Assistir") + '">' +
+      (playing ? "⏸" : "▶") + "</button>";
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = h.thumb || img("placeholder");
-    el.querySelector('[data-a="play"]').addEventListener("click", () => {
+    el.addEventListener("click", () => {
       if (playing) { togglePlay(); return; }
       playEntry(h);
     });
@@ -958,6 +1008,11 @@ $("#p-filter").addEventListener("input", () => { clearTimeout(pFilterTimer); pFi
 $$("#seg-theme button").forEach((b) => b.addEventListener("click", () => {
   S.settings.theme = b.dataset.v; saveSettings(); applyLook();
 }));
+$$("[data-drawer]").forEach((head) => head.addEventListener("click", () => {
+  const body = document.getElementById(head.dataset.drawer);
+  body.classList.toggle("hidden");
+  head.setAttribute("aria-expanded", body.classList.contains("hidden") ? "false" : "true");
+}));
 $("#style-toggle").addEventListener("click", () => {
   const body = $("#style-body");
   body.classList.toggle("hidden");
@@ -999,7 +1054,7 @@ function fillSettings(state) {
   if (state) {
     $("#st-ytdlp").textContent = state.ytdlp || "preparando...";
     $("#st-folder").textContent = state.folder || "Download/BaixadorDeVideos";
-    $("#about").textContent = "Produzido por Lagaz" + (state.ytdlp ? "  •  yt-dlp " + state.ytdlp : "");
+    $("#about").textContent = "Produzido por Lagaz";
     if (state.version) {
       S.version = state.version;
       $("#upd-current").textContent = state.version;
@@ -1181,8 +1236,7 @@ const App = {
       case "focus": checkClipboard(); break;
       case "thumbSaved":
         busyBtn($("#btn-thumb"), false);
-        setStatus("🖼 Thumbnail salva (" + d.w + "×" + d.h + ") em Download/BaixadorDeVideos/" + (d.name || ""), "ok");
-        toast("Thumbnail salva!");
+        toast("🖼 Thumbnail salva em Download/BaixadorDeVideos (" + d.w + "×" + d.h + ")", 3500);
         break;
       case "thumbError":
         busyBtn($("#btn-thumb"), false);
