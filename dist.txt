@@ -1,0 +1,7 @@
+total 225996
+drwxr-xr-x 1 runneradmin 197121         0 Oct 16 11:46 .
+drwxr-xr-x 1 runneradmin 197121         0 Oct 16 11:46 ..
+-rwxr-xr-x 1 runneradmin 197121  12915839 Oct 16 11:46 BaixadorDeVideos.exe
+drwxr-xr-x 1 runneradmin 197121         0 Oct 16 11:46 _internal
+-rwxr-xr-x 1 runneradmin 197121  97462048 Sep 16 16:47 deno.exe
+-rwxr-xr-x 1 runneradmin 197121 121006592 Oct 16 00:24 libmpv-2.dll

@@ -1,0 +1,42 @@
+{
+  "deps": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "pyinstaller": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "deno": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "libmpv": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "inno": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "installer": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "shots": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  },
+  "smoke": {
+    "outputs": {},
+    "outcome": "success",
+    "conclusion": "success"
+  }
+}
