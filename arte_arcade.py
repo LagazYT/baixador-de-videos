@@ -201,6 +201,14 @@ def make_banner(width, height, title, subtitle, bg=None, scale=2, light=False):
         full = Image.new("RGBA", (W, H), _rgba(p["bg"]))
         full.paste(base, (0, 0))
         base = full
+    if title:  # faixa escura atrás do texto (o subtítulo não some no meio das montanhas)
+        shade = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(shade)
+        stop = int(W * 0.62)
+        for x in range(0, stop, max(1, px)):
+            a = 235 if x < W * 0.40 else int(235 * (stop - x) / (stop - W * 0.40))
+            sd.rectangle([x, 0, x + px, H], fill=_rgba(p["bg"], a))
+        base.alpha_composite(shade)
     d = ImageDraw.Draw(base)
     if title:
         f_tag = _font(8 * scale)
