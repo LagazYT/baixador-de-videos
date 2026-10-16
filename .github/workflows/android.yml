@@ -127,6 +127,7 @@ jobs:
             um link e downloads que continuam em segundo plano.
 
             ### Novidades
+            - **1.7.1:** na aba Pesquisar, cada vídeo volta a ter os botões **⬇ Baixar** e **Qualidade**.
             - **App mais limpo e organizado**, com os mesmos recursos:
               - Aba Baixar em um fluxo só: cole o link, escolha a qualidade e acompanhe o download no mesmo cartão.
               - Histórico e Pesquisar com uma ação principal por item; as outras ficam no menu ⋯.

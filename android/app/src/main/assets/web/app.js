@@ -726,22 +726,22 @@ function onSearchResults(d) {
   busyBtn($("#btn-search"), false);
   const box = $("#results");
   if (!d.results.length) { box.innerHTML = emptyArt("Nenhum resultado encontrado."); return; }
-  box.innerHTML = '<p class="muted small list-tip">Toque num vídeo para escolher a qualidade, ou em ⬇ para baixar direto.</p>';
+  box.innerHTML = "";
   d.results.forEach((r) => {
     const el = document.createElement("div");
-    el.className = "res item";
+    el.className = "res";
     el.innerHTML = '<img class="sthumb" alt="">' +
-      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div></div>" +
-      '<button class="icon-btn pri" data-a="quick" aria-label="Baixar na melhor qualidade">⬇</button>';
+      '<div class="info"><div class="t">' + esc(r.title) + '</div><div class="m">' + esc(r.meta) + "</div>" +
+      '<div class="b"><button class="btn pri sm" data-a="quick">⬇ Baixar</button>' +
+      '<button class="btn sm" data-a="pick">Qualidade</button></div></div>';
     const im = el.querySelector("img");
     im.onerror = () => placeholderImg(im);
     im.src = r.thumb || img("placeholder");
-    el.querySelector('[data-a="quick"]').addEventListener("click", (e) => {
-      e.stopPropagation();
+    el.querySelector('[data-a="quick"]').addEventListener("click", () => {
       startDownload({ url: r.url, title: r.title, uploader: r.uploader, duration: r.duration, thumb: r.thumb }, "best");
       showTab("baixar");
     });
-    el.addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
+    el.querySelector('[data-a="pick"]').addEventListener("click", () => { showTab("baixar"); analyze(r.url); });
     box.appendChild(el);
   });
 }
