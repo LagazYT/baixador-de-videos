@@ -132,7 +132,8 @@ jobs:
               - Histórico e Pesquisar com uma ação principal por item; as outras ficam no menu ⋯.
               - Configurações agrupadas e mais curtas; o motor de download e o cookies.txt ficam recolhidos.
               - Menos barras fixas na tela e o banner só na aba Baixar.
-            - Quem está na 1.4.0 ou mais nova pode atualizar direto pelo app, em ⚙ › Atualizações.
+            - Inclui tudo da 1.6.2: estilos Arcade 8-bit e Fantasia / RPG.
+            - Quem está na 1.4.0 ou mais nova pode atualizar direto pelo app, em Ajustes › Atualizações.
 
             ### Qual arquivo baixar?
             - **arm64**: funciona na grande maioria dos celulares (de 2017 para cá).
